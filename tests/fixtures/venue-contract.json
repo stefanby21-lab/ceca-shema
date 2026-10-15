@@ -1,0 +1,132 @@
+{
+  "_comment": "Key names only, no data values. Derived once from venue-data-ceca.js. Update when the data contract changes on purpose.",
+  "topLevel": [
+    "adjacency",
+    "focus",
+    "meta",
+    "objectLabels",
+    "pins",
+    "rowLabels",
+    "seats",
+    "sectionLabels",
+    "sections",
+    "stage",
+    "standing",
+    "tables",
+    "tiers"
+  ],
+  "meta": [
+    "availabilityDate",
+    "availabilitySource",
+    "city",
+    "currency",
+    "date",
+    "event",
+    "fees",
+    "organizer",
+    "runs",
+    "seatPitch",
+    "seats",
+    "sections",
+    "source",
+    "sourceFile",
+    "tableLevels",
+    "tables",
+    "upperTier",
+    "venue",
+    "vipTableIncludes"
+  ],
+  "tierKeys": [
+    "color",
+    "label",
+    "maxEur",
+    "tier"
+  ],
+  "tableLevelKeys": [
+    "color",
+    "eurPerSeat",
+    "eurTable",
+    "label",
+    "level",
+    "perSeat",
+    "pill"
+  ],
+  "properties": {
+    "sections": [
+      "bucket",
+      "bucketLabel",
+      "centroid",
+      "eur",
+      "hasObstructed",
+      "level",
+      "mk",
+      "name",
+      "offsale",
+      "pano",
+      "photo",
+      "priceFrom",
+      "priceFromAll",
+      "real",
+      "seatCount",
+      "tier",
+      "token"
+    ],
+    "seats": [
+      "eur",
+      "eurAll",
+      "mk",
+      "obstructed",
+      "offsale",
+      "r",
+      "run",
+      "s",
+      "sold",
+      "t",
+      "tier",
+      "view"
+    ],
+    "tables": [
+      "color",
+      "eur",
+      "eurAll",
+      "eurPerSeat",
+      "mk",
+      "name",
+      "offsale",
+      "radius",
+      "seats",
+      "sold",
+      "tableLevel",
+      "token"
+    ],
+    "rowLabels": [
+      "label",
+      "s",
+      "side"
+    ],
+    "sectionLabels": [
+      "label",
+      "mk"
+    ],
+    "pins": [
+      "bucket",
+      "mk",
+      "name",
+      "priceFrom",
+      "priceFromAll",
+      "tier"
+    ],
+    "objectLabels": [
+      "label"
+    ],
+    "standing": [
+      "capacity",
+      "eur",
+      "eurAll",
+      "mk",
+      "name",
+      "offsale",
+      "token"
+    ]
+  }
+}
