@@ -365,7 +365,9 @@ window.ArenaSeatView = (function () {
         return t;
       }
       // Главният екран: платното следва равнината stageWidth x screenHeight.
-      const bannerH = 1024, bannerW = Math.min(maxTex, Math.round(bannerH * stageWidth / screenHeight));
+      // Платното пази съотношението на равнината и при ограничение от видеокартата
+      // (G.fitCanvas свива ширината и височината заедно).
+      const { w: bannerW, h: bannerH } = G.fitCanvas(stageWidth, screenHeight, 1024, maxTex);
       const banner = el("canvas");
       banner.width = bannerW; banner.height = bannerH;
       const ctx = banner.getContext("2d");
@@ -402,7 +404,8 @@ window.ArenaSeatView = (function () {
       // и „CECA · 7.11.2026" под него, на един общ текстурен кадър. Стоят отвън на
       // завесите, пред кулите, завъртени към страничните трибуни - не закриват
       // главния екран нито от пода, нито от трибуните.
-      const sideW = 1024, sideH = 1280, sideCanvas = el("canvas");
+      const imagH = 4.6, imagW = imagH * .8, imagBase = 3.4;
+      const { w: sideW, h: sideH } = G.fitCanvas(imagW, imagH, 1280, maxTex), sideCanvas = el("canvas");
       sideCanvas.width = sideW; sideCanvas.height = sideH;
       const sc = sideCanvas.getContext("2d");
       const sg = sc.createLinearGradient(0, 0, sideW, sideH);
@@ -415,7 +418,6 @@ window.ArenaSeatView = (function () {
       fitText(sc, 'CECA · 7.11.2026', rest * .6, 900, ss * .96, .02);
       sc.fillText('CECA · 7.11.2026', sideW / 2, sm * 2 + ss + rest * .62);
       const sideTexture = makeTexture(sideCanvas);
-      const imagH = 4.6, imagW = imagH * sideW / sideH, imagBase = 3.4;
       const imagGeo = new T.PlaneGeometry(imagW, imagH), imagMat = new T.MeshBasicMaterial({ map: sideTexture });
       const imagTowerMat = new T.MeshStandardMaterial({ color: 0x101319, roughness: .85 });
       for (const dir of [-1, 1]) {
@@ -425,6 +427,76 @@ window.ArenaSeatView = (function () {
         const housing = new T.Mesh(new T.BoxGeometry(imagW + .3, imagH + .3, .3), imagTowerMat); housing.position.set(0, imagBase + imagH / 2, 0);
         const tower = new T.Mesh(new T.BoxGeometry(.32, imagBase, .32), imagTowerMat); tower.position.set(0, imagBase / 2, -.1);
         group.add(housing, face, tower); scene.add(group);
+      }
+
+      // ---- ПРАВОСТОЯЩИ, боядисано на пода на зоната ----
+      // По една дума край всяка от четирите страни, с основата към ръба, така че
+      // да се чете право от човек, застанал отвън и гледащ навътре (като
+      // маркировките по подовете на залите). Една текстура на една равнина:
+      // платното е картата на пода отгоре (горе = към сцената), а думите са
+      // завъртяни върху него. Размерът следва зоната: най-дългата страна е
+      // заета на ~64% от думата, височината на главните букви е 1.2 м.
+      const standingZone = ((options.venue.standing || {}).features || [])[0];
+      if (standingZone) {
+        const ring = standingZone.geometry.coordinates[0].map((p) => G.viewPoint(p));
+        const zx = ring.map((p) => p[0] * scale), zz = ring.map((p) => -p[1] * scale);
+        const x0 = Math.min(...zx), x1 = Math.max(...zx), z0 = Math.min(...zz), z1 = Math.max(...zz);
+        const zoneW = x1 - x0, zoneD = z1 - z0;
+        const { w: fw, h: fh } = G.fitCanvas(zoneW, zoneD, 1536, maxTex);
+        const floorCanvas = el("canvas");
+        floorCanvas.width = fw; floorCanvas.height = fh;
+        const fx = floorCanvas.getContext("2d");
+        const ppm = fw / zoneW; // пиксела на метър
+        // Боядисана синя основа на цялата зона (отличава я от сивия под и дава контраст
+        // на светлите букви): картата няма прозрачни
+        // пиксели, затова мипмапите не получават тъмен кант около буквите.
+        fx.fillStyle = "rgba(78,112,170,0.30)"; fx.fillRect(0, 0, fw, fh);
+        const inset = 0.1 * ppm;
+        fx.lineJoin = "round";
+        fx.strokeStyle = "rgba(38,62,104,0.85)"; fx.lineWidth = 0.22 * ppm; fx.strokeRect(inset, inset, fw - 2 * inset, fh - 2 * inset);
+        fx.strokeStyle = "#f4f7fb"; fx.lineWidth = 0.1 * ppm; fx.strokeRect(inset, inset, fw - 2 * inset, fh - 2 * inset);
+        // Един размер на буквите за всички страни, колкото се събира: думата по
+        // късата страна заема ~85% от нея, а по дългите се повтаря два пъти
+        // (естествено разстояние между буквите, като истинските маркировки).
+        const WORD = "ПРАВОСТОЯЩИ", marginM = 0.2, TRACK = 0.06, cornerM = 0.5, FOH_GAP = 9.2;
+        fx.textAlign = "left"; fx.textBaseline = "alphabetic";
+        fx.font = "900 100px " + posterFont;
+        const letters = Array.from(WORD), widths100 = letters.map((ch) => fx.measureText(ch).width);
+        const capRatio = (fx.measureText("П").actualBoundingBoxAscent || 72) / 100;
+        const wordPer100 = widths100.reduce((a, b) => a + b, 0) + TRACK * 100 * (letters.length - 1); // ширина на думата при шрифт 100
+        // Височината на главните букви е ~capRatio/wordPer100 от ширината на думата.
+        const capPerWord = (capRatio * 100) / wordPer100;
+        // Ширина на думата W (м): 85% от късата страна, но така, че две копия по
+        // дългата страна да оставят свободни ъглите (до лентите на късите думи) и
+        // пространството на FOH (9.2 м) при далечния ръб.
+        const W = Math.min(0.85 * zoneD, (zoneW - 2 * (marginM + cornerM) - FOH_GAP) / (2 + 2 * capPerWord));
+        const fontPx = (W * ppm / wordPer100) * 100, capM = W * capPerWord, avgLetter = W / letters.length;
+        fx.font = "900 " + fontPx + "px " + posterFont;
+        fx.fillStyle = "#f8fafc"; fx.strokeStyle = "rgba(30,52,92,0.97)"; fx.lineWidth = 0.2 * ppm;
+        const widths = letters.map((ch) => fx.measureText(ch).width), gapPx = TRACK * fontPx, capPx = capM * ppm;
+        const naturalPx = widths.reduce((a, b) => a + b, 0) + gapPx * (letters.length - 1);
+        function paintWord(rotation, cx, cy, along) {
+          // along: изместване по посоката на четене (в метри) спрямо центъра на лентата.
+          let x = -naturalPx / 2 + along * ppm;
+          fx.save(); fx.translate(cx, cy); fx.rotate(rotation);
+          letters.forEach((ch, k) => { fx.strokeText(ch, x, capPx / 2); fx.fillText(ch, x, capPx / 2); x += widths[k] + gapPx; });
+          fx.restore();
+        }
+        const band = (marginM + capM / 2) * ppm;
+        const nearShift = W / 2 + avgLetter, farShift = W / 2 + FOH_GAP / 2; // две копия: разстояние от 2 букви; до FOH - свободно място
+        // Край сцената (чете се от масите) и срещуположния край (към FOH); завъртането
+        // на 180 обръща посоката на четене, затова изместването е със знак.
+        for (const sign of [-1, 1]) paintWord(Math.PI, fw / 2, band, sign * nearShift);
+        for (const sign of [-1, 1]) paintWord(0, fw / 2, fh - band, sign * farShift);
+        paintWord(Math.PI / 2, band, fh / 2, 0);        // ляв край
+        paintWord(-Math.PI / 2, fw - band, fh / 2, 0);  // десен край
+        const floorTexture = makeTexture(floorCanvas);
+        const floorMark = new T.Mesh(new T.PlaneGeometry(zoneW, zoneD), new T.MeshBasicMaterial({
+          map: floorTexture, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+        floorMark.rotation.x = -Math.PI / 2;
+        floorMark.position.set((x0 + x1) / 2, 0.005, (z0 + z1) / 2);
+        floorMark.renderOrder = 1;
+        scene.add(floorMark);
       }
 
       // Concert rig: two box trusses, cross braces and freestanding towers.

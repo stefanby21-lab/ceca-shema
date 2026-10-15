@@ -346,6 +346,33 @@ window.SeatMap = (function () {
     }
     svg.insertBefore(defs, svg.firstChild);
     const zone = Array.from(zones.values())[0];
+    // ПРАВОСТОЯЩИ по пода на зоната: един размер за всички страни (север 180, юг 0,
+    // запад 90, изток 270), с основата към ръба. По късите страни - една дума
+    // (~85%), по дългите - две копия с разстояние от две букви, ъглите са свободни.
+    // Естествено разстояние между буквите; само украса: aria-hidden, зад балона.
+    if (zone && standingBox && nodes.has(zone.properties.mk)) {
+      const WORD = 'ПРАВОСТОЯЩИ', TRACK = .06, MARGIN = 14, CORNER = 10, CAP = .72;
+      const floor = element('g', { class: 'svg-standing-floor', 'aria-hidden': 'true' });
+      const zoneNode = nodes.get(zone.properties.mk);
+      zoneNode.parentNode.insertBefore(floor, zoneNode.nextSibling);
+      // Ширината на думата се мери с истинския шрифт при размер 100.
+      const probe = element('text', { class: 'floor-word', 'font-size': 100, 'letter-spacing': TRACK * 100, x: 0, y: 0 }, WORD);
+      floor.append(probe);
+      let wordEm = 8.3;
+      try { wordEm = probe.getComputedTextLength() / 100 || wordEm; } catch (_) {}
+      probe.remove();
+      const b = standingBox, cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      const gapEm = 2 * wordEm / WORD.length;
+      const byShort = .85 * b.h / wordEm;
+      const byLong = (b.w - 2 * (MARGIN + CORNER)) / (2 * wordEm + gapEm + 2 * CAP);
+      const em = Math.min(byShort, byLong), word = wordEm * em, gap = gapEm * em;
+      const off = MARGIN + CAP * em / 2, shift = word / 2 + gap / 2;
+      const put = (x, y, rot) => floor.append(element('text', { class: 'floor-word', transform: 'translate(' + x + ' ' + y + ') rotate(' + rot + ')',
+        x: 0, y: CAP * em / 2, 'text-anchor': 'middle', 'font-size': em, 'letter-spacing': TRACK * em }, WORD));
+      put(cx - shift, b.y + off, 180); put(cx + shift, b.y + off, 180);
+      put(cx - shift, b.y + b.h - off, 0); put(cx + shift, b.y + b.h - off, 0);
+      put(b.x + off, cy, 90); put(b.x + b.w - off, cy, -90);
+    }
     if (zone && nodes.has(zone.properties.mk)) {
       standingPin = buildPin(zone.properties);
       svg.appendChild(standingPin);

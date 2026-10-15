@@ -4,7 +4,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 const base = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(base, file), 'utf8');
-function checkout(cart, venue = true) {
+function checkout(cart, venue = true, where = {}) {
   const html = {};
   const element = (id) => new Proxy(function () {}, {
     get(target, key) {
@@ -20,7 +20,7 @@ function checkout(cart, venue = true) {
   });
   const storage = new Map([['arena8888.checkout.cart.v1', JSON.stringify(cart)]]);
   const context = { console, setTimeout, clearTimeout, URLSearchParams, Intl, Number, Math, matchMedia: () => ({ matches: true }),
-    location: { hostname: 'test', search: '' },
+    location: { hostname: where.hostname || 'test', search: where.search || '' },
     sessionStorage: { getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, v), removeItem: k => storage.delete(k) },
     requestAnimationFrame: fn => fn(),
     document: { getElementById: id => element(id), querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, body: element('body'), activeElement: null },

@@ -133,5 +133,24 @@
     }
     return result;
   }
-  root.ArenaGeometry = { apply, band, forView, viewPoint, terraces, SCALE, RISE, BASE };
+  // Платно за равнина planeW x planeH: височина preferredH, ширина по съотношението.
+  // Ако е по-голямо от най-големия размер на текстурата, ИЗМЕРЕНИЯТА СЕ СВИВАТ
+  // ЗАЕДНО (едно и също число) - иначе съотношението се къса и буквите се разтягат.
+  function fitCanvas(planeW, planeH, preferredH, maxTex) {
+    const aspect = planeW / planeH;
+    const k = Math.min(1, maxTex / (preferredH * aspect), maxTex / preferredH);
+    const w0 = preferredH * aspect * k, h0 = preferredH * k;
+    // Търси се най-близката цяла двойка (до три пиксела надолу): с цели числа
+    // съотношението рядко е точно, а така грешката е под един пиксел.
+    let best = null;
+    for (let dw = 0; dw <= 3; dw++)
+      for (let dh = 0; dh <= 3; dh++) {
+        const w = Math.floor(w0) - dw + (dw === 0 && w0 % 1 ? 1 : 0), h = Math.floor(h0) - dh + (dh === 0 && h0 % 1 ? 1 : 0);
+        if (w < 1 || h < 1 || w > maxTex || h > maxTex) continue;
+        const off = Math.abs(w - aspect * h);
+        if (!best || off < best.off - 1e-9) best = { w, h, off };
+      }
+    return best ? { w: best.w, h: best.h } : { w: 1, h: 1 };
+  }
+  root.ArenaGeometry = { apply, band, forView, viewPoint, terraces, fitCanvas, SCALE, RISE, BASE };
 })(typeof window === "undefined" ? globalThis : window);

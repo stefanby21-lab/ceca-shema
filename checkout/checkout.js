@@ -73,10 +73,6 @@
   }
 
   let cart = read(CART_KEY);
-  if ((!cart || !Array.isArray(cart.items) || !cart.items.length) && localDemo && new URLSearchParams(location.search).has("demo")) {
-    cart = demoCart();
-    write(CART_KEY, cart);
-  }
 
   // Количката от схемата е само списък от самоличности и бройки. Цените, етикетите
   // и броят места се смятат ОТНОВО от данните на залата (VENUE), в цели центове:
@@ -133,6 +129,16 @@
     return { version: 1, items, currency: "EUR", ticketCount: admissions, subtotal: totalCents / 100, createdAt: raw.createdAt };
   }
   cart = canonicalCart(cart);
+  // Демо количка (само на localhost с ?demo): записва се САМО ако минава през
+  // същата проверка. Ако залата не е заредена, нищо не се записва и следващото
+  // зареждане опитва пак, вместо да остане количка с празно място.
+  if (!cart && localDemo && new URLSearchParams(location.search).has("demo")) {
+    const demo = canonicalCart(demoCart());
+    if (demo) {
+      cart = demo;
+      write(CART_KEY, cart);
+    }
+  }
 
   const stored = read(FLOW_KEY) || {};
   let state = {

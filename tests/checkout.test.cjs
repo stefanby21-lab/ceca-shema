@@ -80,3 +80,23 @@ test('the checkout page loads the same venue-data stamp as the map page', () => 
   const stamp = (file) => read(file).match(/venue-data-ceca\.js\?v=([0-9a-f]+)/)[1];
   assert.equal(stamp('checkout/index.html'), stamp('index.html'));
 });
+
+test('the localhost ?demo cart is saved only when it validates, and is retried once the venue loads', () => {
+  const where = { hostname: 'localhost', search: '?demo=1' };
+  const key = 'arena8888.checkout.cart.v1';
+  // Залата не се зарежда: нищо не се записва (не остава количка с празно място).
+  const broken = checkout(null, false, where);
+  const saved = JSON.parse(broken.storage.get(key) || 'null');
+  assert.equal(saved, null);
+  assert.equal(broken.html['order-summary'] || '', '');
+  // Следващо зареждане със залата: демо количка с истинско място, записана и показана.
+  const ok = checkout(null, true, where);
+  const cart = JSON.parse(ok.storage.get(key));
+  assert.equal(cart.items.length, 1);
+  assert.notEqual(cart.items[0].id, '');
+  assert.ok(freeSeats.some(f => f.properties.mk === cart.items[0].id));
+  assert.notEqual(ok.html['order-summary'] || '', '');
+  // Без ?demo или извън localhost демото не се появява.
+  assert.equal(checkout(null, true, { hostname: 'localhost', search: '' }).html['order-summary'] || '', '');
+  assert.equal(checkout(null, true, { hostname: 'ceca-shema.vercel.app', search: '?demo=1' }).html['order-summary'] || '', '');
+});

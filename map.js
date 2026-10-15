@@ -1328,6 +1328,33 @@ window.SeatMap = (function () {
       { padding: { top: 70, bottom: A ? 170 : 110, left: 30, right: 30 + panelPad() }, pitch: 0, bearing: 0, duration: rmo() ? 0 : 900, essential: !0 },
     );
   }
+  // ПРАВОСТОЯЩИ, боядисано на пода: един размер на буквите за всички страни, с
+  // основата към ръба, за да се чете от човек отвън, гледащ навътре (север 180,
+  // юг 0, запад 90, изток 270). По късите страни - една дума (~80% от страната),
+  // по дългите - две копия с разстояние от две букви, ъглите остават свободни.
+  // Буквите лежат плоско по картата.
+  const ST_EM = 0.8, // височина на шрифта в единиците на картата
+    ST_WORD = 8.33, // ширина на думата в em (Noto Sans Regular, разстояние между буквите 0.06 em)
+    ST_TRACK = 0.06;
+  function stWords() {
+    const f = l.standing && l.standing.features && l.standing.features[0];
+    if (!f) return { type: "FeatureCollection", features: [] };
+    const xs = f.geometry.coordinates[0].map(function (pt) { return pt[0]; }),
+      ys = f.geometry.coordinates[0].map(function (pt) { return pt[1]; }),
+      x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs),
+      y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys),
+      cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, off = 0.2 + ST_EM * 0.45,
+      // Средата на всяко от двете копия: половин дума и половин разстояние от две букви.
+      shift = (ST_WORD * ST_EM) / 2 + (ST_WORD / 11) * ST_EM,
+      mk = function (x, y, rot) {
+        return { type: "Feature", geometry: { type: "Point", coordinates: [x, y] }, properties: { rot: rot } };
+      };
+    return {
+      type: "FeatureCollection",
+      features: [mk(cx - shift, y1 - off, 180), mk(cx + shift, y1 - off, 180), mk(cx - shift, y0 + off, 0), mk(cx + shift, y0 + off, 0),
+        mk(x0 + off, cy, 90), mk(x1 - off, cy, 270)],
+    };
+  }
   function stLayers() {
     if (!l.standing || !l.standing.features || !l.standing.features.length) return;
     const sel = ["boolean", ["feature-state", "selected"], !1],
@@ -1367,6 +1394,47 @@ window.SeatMap = (function () {
       type: "line",
       source: "standing",
       paint: { "line-color": Ae, "line-width": 3, "line-opacity": ["case", sel, 1, 0] },
+    });
+    // Думата по четирите страни: под балона с цената и без сблъсъци с него. Има
+    // само тънък шрифт, затова тежестта е с дебело светло ореолче върху тъмно:
+    // долният слой е тъмният контур, горният - светлите букви.
+    i.addSource("standingWords", { type: "geojson", data: stWords() });
+    const wordLayout = {
+      "text-field": "ПРАВОСТОЯЩИ",
+      "text-font": K,
+      // Размерът следва мащаба на картата (като геометрия): px = em * 512 * 2^z / 360.
+      "text-size": ["interpolate", ["exponential", 2], ["zoom"], 0, (ST_EM * 512) / 360, 24, ((ST_EM * 512) / 360) * Math.pow(2, 24)],
+      "text-letter-spacing": ST_TRACK,
+      "text-rotate": ["get", "rot"],
+      "text-rotation-alignment": "map",
+      "text-pitch-alignment": "map",
+      "text-anchor": "center",
+      "text-max-width": 60,
+      "text-allow-overlap": !0,
+      "text-ignore-placement": !0,
+      "text-padding": 0,
+    };
+    i.addLayer({
+      id: "standing-words-outline",
+      type: "symbol",
+      source: "standingWords",
+      layout: wordLayout,
+      paint: {
+        "text-color": "#1E345C",
+        "text-halo-color": "#1E345C",
+        "text-halo-width": ["interpolate", ["linear"], ["zoom"], 3, 1.7, 9, 6],
+      },
+    });
+    i.addLayer({
+      id: "standing-words",
+      type: "symbol",
+      source: "standingWords",
+      layout: wordLayout,
+      paint: {
+        "text-color": "#F8FAFC",
+        "text-halo-color": "#F8FAFC",
+        "text-halo-width": ["interpolate", ["linear"], ["zoom"], 3, 0.9, 9, 3.3],
+      },
     });
     i.addLayer({
       id: "standing-label",
