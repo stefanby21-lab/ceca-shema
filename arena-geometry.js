@@ -133,6 +133,75 @@
     }
     return result;
   }
+  // ---- Завеси: чист изчислител (без three.js) ----
+  // Връща триъгълниците на завесите в метри (x = X*scale, z = -Y*scale, y нагоре):
+  //  rear - задна завеса през цялата зала, зад линията на екрана;
+  //  hoods - по един "похлупак" за всеки затворен сектор до сцената: плоска покривка
+  //          над местата (по равнината на трибуната) и пола по ръба ѝ.
+  // Вертикална стена отпред на затворените блокове задължително закриваше погледа
+  // от продаваемите места към сцената (затворените блокове са точно по пътя на
+  // лъча), затова блоковете се покриват, а не се заграждат. venue е вече през
+  // forView (същите координати като изгледа от място).
+  function curtainPanels(venue, opts) {
+    opts = opts || {};
+    const S = opts.scale || SCALE, LIFT = opts.lift == null ? 1.0 : opts.lift, SKIRT_DROP = 1.2, GROW = 0.45, REAR_GAP = 0.9, H = opts.height || 25;
+    const st = venue.stage.geometry.coordinates[0],
+      stageBack = -Math.max.apply(null, st.map((p) => p[1])) * S,
+      stageFront = -Math.min.apply(null, st.map((p) => p[1])) * S,
+      free = (p) => !p.sold && !p.offsale && p.eur > 0,
+      bySector = new Map();
+    let faceMax = 0;
+    for (const f of venue.seats.features) {
+      const p = f.properties, x = f.geometry.coordinates[0] * S, z = -f.geometry.coordinates[1] * S, el = (p.el || 0) * S;
+      faceMax = Math.max(faceMax, Math.abs(x));
+      let e = bySector.get(p.s);
+      if (!e) bySector.set(p.s, (e = { s: p.s, pts: [], free: 0 }));
+      e.pts.push([x, z, el]);
+      if (free(p)) e.free++;
+    }
+    const rearZ = stageBack - REAR_GAP;
+    const rear = { x0: -faceMax - 0.8, x1: faceMax + 0.8, z: rearZ, height: H };
+    const hull = (pts) => {
+      const a = pts.map((p) => [p[0], p[1]]).sort((u, v) => u[0] - v[0] || u[1] - v[1]), cr = (o, u, v) => (u[0] - o[0]) * (v[1] - o[1]) - (u[1] - o[1]) * (v[0] - o[0]);
+      const lo = [], up = [];
+      for (const p of a) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+      for (const p of a.slice().reverse()) { while (up.length > 1 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+      return lo.slice(0, -1).concat(up.slice(0, -1));
+    };
+    const hoods = [];
+    for (const e of bySector.values()) {
+      if (e.free > 0) continue;
+      // Само затворените блокове, които се виждат от продаваемите места: пред задната
+      // завеса и не по-далече от сцената в дълбочина (ложите по страните не се пипат).
+      const zMax = Math.max.apply(null, e.pts.map((p) => p[1]));
+      if (zMax < rearZ + 0.5 || zMax > stageFront + 3 || e.pts.length < 3) continue;
+      // Равнина на трибуната (най-малки квадрати): el = a*x + b*z + c.
+      let n = e.pts.length, sx = 0, sz = 0, sy = 0, sxx = 0, sxz = 0, szz = 0, sxy = 0, szy = 0;
+      for (const [x, z, y] of e.pts) { sx += x; sz += z; sy += y; sxx += x * x; sxz += x * z; szz += z * z; sxy += x * y; szy += z * y; }
+      const D = n * (sxx * szz - sxz * sxz) - sx * (sx * szz - sxz * sz) + sz * (sx * sxz - sxx * sz) || 1,
+        a = (n * (sxy * szz - sxz * szy) - sy * (sx * szz - sxz * sz) + sz * (sx * szy - sxy * sz)) / D,
+        b = (n * (sxx * szy - sxy * sxz) - sx * (sx * szy - sxy * sz) + sy * (sx * sxz - sxx * sz)) / D,
+        c = (sy - a * sx - b * sz) / n;
+      let up = -Infinity, down = Infinity;
+      for (const [x, z, y] of e.pts) { const r = y - (a * x + b * z + c); up = Math.max(up, r); down = Math.min(down, y); }
+      const lift = up + LIFT, level = (x, z) => a * x + b * z + c + lift;
+      const h = hull(e.pts), cx = h.reduce((t, p) => t + p[0], 0) / h.length, cz = h.reduce((t, p) => t + p[1], 0) / h.length;
+      // Контурът се разширява навън, за да покрие и ръбовете на местата.
+      const hp = h.map(([x, z]) => { const dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz) || 1; return [x + (dx / d) * GROW, z + (dz / d) * GROW]; });
+      const tris = [], P = (x, z) => [x, level(x, z), z];
+      for (let i = 0; i < hp.length; i++) {
+        const u = hp[i], w = hp[(i + 1) % hp.length];
+        tris.push([[cx, level(cx, cz), cz], P(u[0], u[1]), P(w[0], w[1])]);
+        // Пола: от ръба на покривката до малко под най-ниското място.
+        const yb = down - SKIRT_DROP, pu = P(u[0], u[1]), pw = P(w[0], w[1]);
+        tris.push([pu, pw, [w[0], yb, w[1]]], [pu, [w[0], yb, w[1]], [u[0], yb, u[1]]]);
+      }
+      hoods.push({ sector: e.s, tris });
+    }
+    const triangles = [[[rear.x0, 0, rearZ], [rear.x1, 0, rearZ], [rear.x1, H, rearZ]], [[rear.x0, 0, rearZ], [rear.x1, H, rearZ], [rear.x0, H, rearZ]]];
+    for (const hd of hoods) for (const t of hd.tris) triangles.push(t);
+    return { rear, hoods, triangles, stageBack, stageFront };
+  }
   // Платно за равнина planeW x planeH: височина preferredH, ширина по съотношението.
   // Ако е по-голямо от най-големия размер на текстурата, ИЗМЕРЕНИЯТА СЕ СВИВАТ
   // ЗАЕДНО (едно и също число) - иначе съотношението се къса и буквите се разтягат.
@@ -152,5 +221,5 @@
       }
     return best ? { w: best.w, h: best.h } : { w: 1, h: 1 };
   }
-  root.ArenaGeometry = { apply, band, forView, viewPoint, terraces, fitCanvas, SCALE, RISE, BASE };
+  root.ArenaGeometry = { apply, band, forView, viewPoint, terraces, fitCanvas, curtainPanels, SCALE, RISE, BASE };
 })(typeof window === "undefined" ? globalThis : window);

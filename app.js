@@ -1246,7 +1246,7 @@
       if (!btn) return;
       // Reuse the seat-view controller, including its native SVG fallback.
       preview?.addEventListener("click", function () {
-        const mk = sel[0] || selT[0];
+        const mk = sel[0] || selT[0] || (standingQty ? STANDING_MK : null);
         if (mk) W(mk);
       });
       // Отдалечен ли е изгледът от началния. Мерим спрямо НАЧАЛНИЯ кадър, а не
@@ -1285,8 +1285,8 @@
         // „Цялата зала“ променя само камерата и никога не изтрива билети.
         const hasSelection = !!(sel.length || selT.length || standingQty), away = otdalechen(mp);
         btn.hidden = !away && !(desktop.matches && hasSelection);
-        // „Преглед" има смисъл само за място или маса: правостоящите нямат изглед.
-        if (preview) preview.hidden = !(sel.length || selT.length);
+        // „Преглед" води и към гледната точка на правостоящите (в центъра на зоната).
+        if (preview) preview.hidden = !(sel.length || selT.length || standingQty);
         if (away) vlqzal = !0;
       };
       // Отдалечи ли се човек сам - с колелцето или с два пръста - схемата вече
@@ -1586,11 +1586,13 @@
     function W(e) {
       if (window.SeatMap.mode === '2d') {
         window.dispatchEvent(new CustomEvent('arena:map-focus'));
-        if (tb2.has(e)) window.SeatMap.frameTable(e);
+        if (e === STANDING_MK) window.SeatMap.frameStanding();
+        else if (tb2.has(e)) window.SeatMap.frameTable(e);
         else window.SeatMap.frameSeats([e]);
         return;
       }
       if (window.ArenaSeatView && o.meta?.venue === 'Арена 8888') {
+        if(e===STANDING_MK){window.ArenaSeatView.open({venue:o,mk:e,title:STANDING_NAME,selected:[]});return;}
         const seat=h.get(e), table=tb2.get(e);if(!seat&&!table)return;
         window.ArenaSeatView.open({venue:o,mk:e,title:table?table.name:'Сектор '+seat.s+' · ред '+seat.r+' · място '+seat.t,
           selected:sel.filter(mk=>mk!==e).map(mk=>{const s=h.get(mk);return {mk,title:'Сектор '+s.s+' · ред '+s.r+' · място '+s.t};})});
