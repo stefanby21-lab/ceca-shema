@@ -9,8 +9,39 @@
   let current = 'initialization';
   const browser = typeof navigator === 'object' ? navigator.userAgent : '';
   let timer = setTimeout(function () { fail('timeout: ' + current); }, 30000);
+  // Автоматичен преход към SVG плана: при провал на WebGL пътя се минава ВЕДНЪЖ към
+  // ?view=2d, вместо екран с грешка. Флагът в sessionStorage пази от цикъл (ако и 2D
+  // се провали, показва се екранът с грешка). Бутонът „Заредете отново" го чисти.
+  const FALLBACK_KEY = 'ceca.fallback2d.v1';
+  function fallbackTo2d() {
+    if (!graphics) return false;
+    try {
+      if (window.sessionStorage.getItem(FALLBACK_KEY)) return false;
+      window.sessionStorage.setItem(FALLBACK_KEY, '1');
+    } catch (_) { return false; }
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', '2d');
+    console.warn('[seatmap startup] falling back to the SVG plan');
+    try { window.location.replace(url.href); return true; } catch (_) { return false; }
+  }
+  // Само грешка от НАШ скрипт е фатална: същият произход, истински файл и ред и
+  // реално съобщение. „Script error." без файл и ред е начинът, по който WebKit
+  // подава грешки от чужди или инжектирани скриптове (Brave/Chrome на iOS слагат
+  // свои), а те не са наши и не бива да спират схемата.
+  const origin = (function () { try { return new URL(window.location.href).origin; } catch (_) { return ''; } })();
+  function isOwnError(event) {
+    if (!event || !event.filename || !event.message || /^script error\.?$/i.test(String(event.message).trim())) return false;
+    let from;
+    try { from = new URL(event.filename, window.location.href).origin; } catch (_) { return false; }
+    return from === origin && event.lineno > 0;
+  }
+  function isOwnRejection(event) {
+    const reason = event && event.reason;
+    return !!(reason && typeof reason.stack === 'string' && origin && reason.stack.indexOf(origin) >= 0);
+  }
   function fail(reason) {
     if (failed || (appReady && mapReady && scriptsReady)) return;
+    if (fallbackTo2d()) { failed = true; clearTimeout(timer); return; }
     failed = true;
     clearTimeout(timer);
     status.hidden = true;
@@ -52,12 +83,21 @@
     if (failed) event.stopImmediatePropagation();
   }, true);
   window.addEventListener('error', function (event) {
-    if (event.message) fail(current + ': ' + event.message);
+    if (!isOwnError(event)) {
+      console.warn('[seatmap startup] ignored foreign error', event && event.message, event && event.filename, event && event.lineno);
+      return;
+    }
+    fail(current + ': ' + event.message + ' (' + String(event.filename).split('/').pop().split('?')[0] + ':' + event.lineno + ':' + (event.colno || 0) + ')');
   });
   window.addEventListener('unhandledrejection', function (event) {
-    fail(current + ': ' + String(event.reason && event.reason.message || event.reason));
+    if (!isOwnRejection(event)) {
+      console.warn('[seatmap startup] ignored foreign rejection', event && event.reason && event.reason.message || event && event.reason);
+      return;
+    }
+    fail(current + ': ' + String(event.reason.message || event.reason));
   });
   document.getElementById('startup-retry').onclick = function () {
+    try { window.sessionStorage.removeItem(FALLBACK_KEY); } catch (_) {}
     const url = new URL(window.location.href);
     url.searchParams.set('retry', String(Date.now()));
     window.location.href = url.href;

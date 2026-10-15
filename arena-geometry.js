@@ -202,6 +202,77 @@
     for (const hd of hoods) for (const t of hd.tris) triangles.push(t);
     return { rear, hoods, triangles, stageBack, stageFront };
   }
+  // ---- Барове и FOH: чист изчислител (без three.js) ----
+  // Всичко е от успоредни на осите кутии {k, x, y, z, w, h, d} (център и размери в
+  // метри; k е материалът), плюс бутилки, столове и табели. Рендерерът само ги
+  // рисува, а тестът за линиите на зрение хвърля лъчи през същите кутии.
+  // Позициите и ширините са от данните (venue.objectLabels: център и size на
+  // правоъгълниците от плана). venue е суровият (без forView), както в изгледа.
+  // FOH няма навес: висящ борд на 3 м закриваше сцената от B.1.3 (Codex r4), затова
+  // има само подиум, пулт, рекове и ниска ограда с малка табела до 1.3 м.
+  function floorProps(venue, opts) {
+    opts = opts || {};
+    const S = opts.scale || SCALE, BACK_IN = opts.backIn == null ? 2.1 : opts.backIn;
+    const zone = ((venue.standing || {}).features || [])[0];
+    const z1 = zone ? Math.max.apply(null, zone.geometry.coordinates[0].map((p) => -viewPoint(p)[1] * S)) : 27.5;
+    const frontZ = z1 - BACK_IN + 1.0; // лицето на тезгяха
+    const out = { boxes: [], bottles: [], stools: [], barSigns: [], fohSigns: [], frontZ };
+    const add = (k, w, h, d, x, y, z) => out.boxes.push({ k, x, y, z, w, h, d });
+    const labels = ((venue.objectLabels || {}).features || []).filter((f) => f.properties.label === "BAR" || f.properties.label === "FOH");
+    function bar(cx, W) {
+      const z0 = frontZ, zb = z0 + 1.5;
+      add("dark", W, 1.08, .6, cx, .54, z0 + .3);
+      add("ledWhite", W - .08, .05, .02, cx, 1.0, z0 - .01);
+      add("goldGlow", W - .08, .03, .02, cx, .1, z0 - .01);
+      add("gloss", W + .1, .07, .74, cx, 1.115, z0 + .3);
+      add("chrome", W - .2, .04, .04, cx, .2, z0 - .12);
+      add("dark", W - .4, 1.0, .55, cx, .5, zb + .275);
+      add("backGlow", W - .7, 1.5, .02, cx, 1.9, zb + .56);
+      for (const y of [1.4, 1.85, 2.3]) {
+        add("fader", W - .7, .025, .3, cx, y, zb + .4);
+        add("ledWhite", W - .7, .02, .02, cx, y - .03, zb + .24);
+        for (let x = cx - (W - 1.1) / 2; x <= cx + (W - 1.1) / 2; x += .14) out.bottles.push({ x, y: y + .013, z: zb + .4 });
+      }
+      add("dark", .08, 1.5, .1, cx - (W - .6) / 2, 1.9, zb + .56);
+      add("dark", .08, 1.5, .1, cx + (W - .6) / 2, 1.9, zb + .56);
+      // Рамка (ферма) с лайтбокс: стълбове и греда. Височината е избрана да не пресича
+      // лъчите към сцената от най-близките продаваемите места (виж теста).
+      const px = (W - .6) / 2, top = opts.headerTop || 2.8, sy = opts.signY == null ? 1.5 : opts.signY;
+      for (const sx of [-1, 1]) add("chrome", .14, top, .14, cx + sx * px, top / 2, z0 + .75);
+      add("chrome", W - .46, .14, .14, cx, top, z0 + .75);
+      add("chrome", W - .46, .14, .14, cx, top - .2, z0 + .75);
+      out.barSigns.push({ x: cx, y: sy, z: z0 + .75, w: 2.7, h: 1.1 });
+      add("lightbox", 2.7, 1.1, 2.7, cx, sy + .55, z0 + .75);
+      for (const side of [-1, 1]) for (let k = 0; k < 3; k++) out.stools.push({ x: cx + side * (2.0 + k * .85), z: z0 - .48 });
+    }
+    function foh(cx, W) {
+      const z0 = frontZ, D = 2.3, zc = z0 + D / 2, Wf = Math.min(8.4, W), Ry = .4;
+      add("riser", Wf, Ry, D, cx, Ry / 2, zc);
+      add("goldGlow", Wf, .04, .02, cx, Ry - .04, z0 - .01);
+      add("riser", 1.4, .2, .4, cx, .1, z0 - .2);
+      add("dark", 5.4, .72, .9, cx, Ry + .36, zc);
+      add("gloss", 5.5, .05, 1.0, cx, Ry + .745, zc);
+      for (let k = 0; k < 24; k++) add("fader", .06, .025, .24, cx - 2.3 + k * .2, Ry + .785, zc - .08);
+      for (const dx of [-1.6, 0, 1.6]) add("screenGlow", .62, .36, .035, cx + dx, Ry + 1.0, zc + .38);
+      for (const sx of [-1, 1]) {
+        add("dark", .62, 1.25, .62, cx + sx * (Wf / 2 - .6), Ry + .625, zc + .5);
+        add("ledWhite", .5, .04, .02, cx + sx * (Wf / 2 - .6), Ry + .95, zc + .19);
+        add("goldGlow", .5, .04, .02, cx + sx * (Wf / 2 - .6), Ry + .6, zc + .19);
+      }
+      // Ниска ограда около подиума (отворена пред стъпалото) и малка табела на нея.
+      const fy = Ry + .5 + .35;
+      for (const [w, d, x, z] of [[Wf, .04, cx, zc + D / 2 - .05], [.04, D, cx - Wf / 2 + .05, zc], [.04, D, cx + Wf / 2 - .05, zc], [Wf / 2 - .8, .04, cx - Wf / 4 - .4, z0 + .05], [Wf / 2 - .8, .04, cx + Wf / 4 + .4, z0 + .05]]) add("chrome", w, .04, d, x, fy, z);
+      // Табела „FOH": тъмен панел 1.6 x .4 на предната и задната ограда, до 1.3 м от пода.
+      add("signbox", 1.6, .4, .05, cx, 1.0, z0 + .05);
+      add("signbox", 1.6, .4, .05, cx, 1.0, zc + D / 2 - .05);
+      out.fohSigns.push({ x: cx, y: 1.0, z: z0 + .05 - .03, w: 1.6, h: .4, toward: -1 }, { x: cx, y: 1.0, z: zc + D / 2 - .05 + .03, w: 1.6, h: .4, toward: 1 });
+    }
+    for (const f of labels) {
+      const c = viewPoint(f.geometry.coordinates), cx = c[0] * S, W = Math.max(4, Math.min(11, (f.properties.size || [3.4, 1])[0] * S));
+      if (f.properties.label === "BAR") bar(cx, W); else foh(cx, W);
+    }
+    return out;
+  }
   // Платно за равнина planeW x planeH: височина preferredH, ширина по съотношението.
   // Ако е по-голямо от най-големия размер на текстурата, ИЗМЕРЕНИЯТА СЕ СВИВАТ
   // ЗАЕДНО (едно и също число) - иначе съотношението се къса и буквите се разтягат.
@@ -221,5 +292,5 @@
       }
     return best ? { w: best.w, h: best.h } : { w: 1, h: 1 };
   }
-  root.ArenaGeometry = { apply, band, forView, viewPoint, terraces, fitCanvas, curtainPanels, SCALE, RISE, BASE };
+  root.ArenaGeometry = { apply, band, forView, viewPoint, terraces, fitCanvas, curtainPanels, floorProps, SCALE, RISE, BASE };
 })(typeof window === "undefined" ? globalThis : window);

@@ -825,27 +825,26 @@ window.ArenaSeatView = (function () {
       // задния сектор: гостите (столове) 1.0 м, тезгях 0.6, проход 0.9, задна
       // поличка 0.55. Нищо не е светлинен източник: сиянието е самосветещ материал.
       {
-        const labels = ((options.venue.objectLabels || {}).features || []).filter((f) => f.properties.label === "BAR" || f.properties.label === "FOH");
-        const frontZ = (zoneBox ? zoneBox.z1 : 27.5) - BACK_Z_IN + 1.0; // лицето на тезгяха
+        // Разположението е в ArenaGeometry.floorProps (чисто, с тест за линиите на зрение).
+        const props = G.floorProps(options.venue, { scale, backIn: BACK_Z_IN });
         const GOLD = 0xe8b04b;
         const dark = new T.MeshStandardMaterial({ color: 0x15171c, roughness: .6, metalness: .3 });
         const gloss = new T.MeshStandardMaterial({ color: 0x0a0b0e, roughness: .12, metalness: .5, envMap: envTarget.texture, envMapIntensity: 1.1 });
         const chrome = new T.MeshStandardMaterial({ color: 0xb9c0c8, roughness: .3, metalness: .85, envMap: envTarget.texture, envMapIntensity: 1 });
-        const fabric = new T.MeshStandardMaterial({ color: 0x353a44, roughness: 1 });
         const riser = new T.MeshStandardMaterial({ color: 0x2a2e36, roughness: .7, metalness: .2 });
         const goldGlow = new T.MeshBasicMaterial({ color: GOLD });
         const ledWhite = new T.MeshBasicMaterial({ color: 0xfff1d2 });
         const backGlow = new T.MeshBasicMaterial({ color: 0xd99a35 });
         const screenGlow = new T.MeshBasicMaterial({ color: 0xa8d4ff });
         const fader = new T.MeshBasicMaterial({ color: 0xffe3a3 });
-        const mats = { dark, gloss, chrome, fabric, riser, goldGlow, ledWhite, backGlow, screenGlow, fader };
-        for (const m of Object.values(mats)) { resources.add(m); m.userData.bar = true; }
+        const mats = { dark, gloss, chrome, riser, goldGlow, ledWhite, backGlow, screenGlow, fader, signbox: dark };
+        for (const m of new Set(Object.values(mats))) { resources.add(m); m.userData.bar = true; }
         const P = {}; for (const k of Object.keys(mats)) P[k] = [];
-        const add = (k, w, h, d, x, y, z, ry = 0) => P[k].push([new T.BoxGeometry(w, h, d), x, y, z, 0, ry, 0]);
+        for (const b of props.boxes) if (P[b.k]) P[b.k].push([new T.BoxGeometry(b.w, b.h, b.d), b.x, b.y, b.z]);
         // Бутилки на рафтовете: ЕДНА InstancedMesh с цвят на инстанция и евтина геометрия.
         const bottleGeo = lathe([[0, 0], [.03, 0], [.03, .15], [.013, .2], [.013, .26], [0, .26]], 6, 0xffffff);
-        const bottleSpots = [], bottleColors = [0x5a3a18, 0x2f6b3a, 0xdfe7ec, 0x8a2323, 0x3a2a18, 0xc8b45a, 0x1d5fae];
-        const stoolSpots2 = [], signSpots = [];
+        const bottleSpots = props.bottles, bottleColors = [0x5a3a18, 0x2f6b3a, 0xdfe7ec, 0x8a2323, 0x3a2a18, 0xc8b45a, 0x1d5fae];
+        const stoolSpots2 = props.stools.map((q) => ({ x: q.x, z: q.z, angle: 0 })), signSpots = props.barSigns;
         // Табелата: четири лица, една текстура; златен кант, бяло „BAR" на тъмно.
         const mkSign = (word, SW, SH, size) => {
           const { w: tw, h: th } = G.fitCanvas(SW, SH, size, maxTex);
@@ -858,69 +857,10 @@ window.ArenaSeatView = (function () {
           g2.fillText(word, tw / 2, th / 2 + px * .36);
           const m = new T.MeshBasicMaterial({ map: makeTexture(c2) }); resources.add(m); return m;
         };
-        function bar(cx, W) {
-          const z0 = frontZ, zb = z0 + 1.5;
-          // Островен тезгях: тъмен корпус, осветена лента (топло бяла LED) по горния ръб
-          // на лицето, златен цокъл и гланцов тъмен плот.
-          add("dark", W, 1.08, .6, cx, .54, z0 + .3);
-          add("ledWhite", W - .08, .05, .02, cx, 1.0, z0 - .01);
-          add("goldGlow", W - .08, .03, .02, cx, .1, z0 - .01);
-          add("gloss", W + .1, .07, .74, cx, 1.115, z0 + .3);
-          add("chrome", W - .2, .04, .04, cx, .2, z0 - .12);
-          // Задна поличка: шкаф, светещ гръб, три светещи рафта с бутилки.
-          add("dark", W - .4, 1.0, .55, cx, .5, zb + .275);
-          add("backGlow", W - .7, 1.5, .02, cx, 1.9, zb + .56);
-          for (const y of [1.4, 1.85, 2.3]) {
-            add("fader", W - .7, .025, .3, cx, y, zb + .4);
-            add("ledWhite", W - .7, .02, .02, cx, y - .03, zb + .24);
-            for (let x = cx - (W - 1.1) / 2; x <= cx + (W - 1.1) / 2; x += .14) bottleSpots.push({ x, y: y + .013, z: zb + .4 });
-          }
-          add("dark", .08, 1.5, .1, cx - (W - .6) / 2, 1.9, zb + .56);
-          add("dark", .08, 1.5, .1, cx + (W - .6) / 2, 1.9, zb + .56);
-          // Тънка рамка (ферма) с лайтбокс: два стълба и греда на ~3.4 м.
-          const px = (W - .6) / 2;
-          for (const sx of [-1, 1]) add("chrome", .14, 3.5, .14, cx + sx * px, 1.75, z0 + .75);
-          add("chrome", W - .46, .14, .14, cx, 3.5, z0 + .75);
-          add("chrome", W - .46, .14, .14, cx, 3.3, z0 + .75);
-          for (let x = cx - px + .4; x < cx + px - .3; x += .8) add("chrome", .035, .2, .035, x, 3.4, z0 + .75);
-          for (const dx of [-.9, .9]) add("chrome", .03, .45, .03, cx + dx, 3.07, z0 + .75);
-          signSpots.push([cx, 2.5, z0 + .75]);
-          // Столове от гостите, вън от входа (3 м) - не го запушват.
-          for (const side of [-1, 1]) for (let k = 0; k < 3; k++) stoolSpots2.push({ x: cx + side * (2.0 + k * .85), z: z0 - .48, angle: 0 });
-        }
-        function foh(cx, W) {
-          // FOH: черен подиум 0.4 м със стъпало, дълъг пулт със светещи фейдъри и екрани,
-          // две стойки (рек), ниска ограда и тъмен навес на четири стълба с табела.
-          const z0 = frontZ, D = 2.3, zc = z0 + D / 2, Wf = Math.min(8.4, W), Ry = .4;
-          add("riser", Wf, Ry, D, cx, Ry / 2, zc);
-          add("goldGlow", Wf, .04, .02, cx, Ry - .04, z0 - .01);   // светеща лента по ръба на подиума
-          add("riser", 1.4, .2, .4, cx, .1, z0 - .2);   // стъпало
-          add("dark", 5.4, .72, .9, cx, Ry + .36, zc);
-          add("gloss", 5.5, .05, 1.0, cx, Ry + .745, zc);
-          for (let k = 0; k < 24; k++) add("fader", .06, .025, .24, cx - 2.3 + k * .2, Ry + .785, zc - .08);
-          for (const dx of [-1.6, 0, 1.6]) { add("screenGlow", .62, .36, .035, cx + dx, Ry + 1.0, zc + .38); }
-          for (const sx of [-1, 1]) { add("dark", .62, 1.25, .62, cx + sx * (Wf / 2 - .6), Ry + .625, zc + .5); add("ledWhite", .5, .04, .02, cx + sx * (Wf / 2 - .6), Ry + .95, zc + .19); add("goldGlow", .5, .04, .02, cx + sx * (Wf / 2 - .6), Ry + .6, zc + .19); }
-          // Ниска ограда около подиума (отворена пред стъпалото).
-          const fy = Ry + .5;
-          for (const [w, d, x, z] of [[Wf, .04, cx, zc + D / 2 - .05], [.04, D, cx - Wf / 2 + .05, zc], [.04, D, cx + Wf / 2 - .05, zc], [Wf / 2 - .8, .04, cx - Wf / 4 - .4, z0 + .05], [Wf / 2 - .8, .04, cx + Wf / 4 + .4, z0 + .05]]) add("chrome", w, .04, d, x, fy + .35, z);
-          // Навес: плат на четири тънки стълба; предният и задният борд носят табелата.
-          const cy = 3.2;
-          add("fabric", Wf + .6, .08, D + .6, cx, cy, zc);
-          add("fabric", Wf + .6, .7, .06, cx, cy - .4, zc - D / 2 - .3);
-          add("fabric", Wf + .6, .7, .06, cx, cy - .4, zc + D / 2 + .3);
-          add("goldGlow", Wf + .6, .04, .07, cx, cy - .76, zc - D / 2 - .3);
-          add("goldGlow", Wf + .6, .04, .07, cx, cy - .76, zc + D / 2 + .3);
-          for (const sx of [-1, 1]) for (const sz of [-1, 1]) add("dark", .08, cy, .08, cx + sx * (Wf / 2 + .25), cy / 2, zc + sz * (D / 2 + .25));
-          fohAt.push([cx, cy - .4, zc - D / 2 - .34], [cx, cy - .4, zc + D / 2 + .34]);
-        }
-        const fohAt = [];
-        for (const f of labels) {
-          const c = G.viewPoint(f.geometry.coordinates), cx = c[0] * scale, W = Math.max(4, Math.min(11, (f.properties.size || [3.4, 1])[0] * scale));
-          if (f.properties.label === "BAR") bar(cx, W); else foh(cx, W);
-        }
         for (const [k, mat] of Object.entries(mats)) {
-          if (!P[k].length) continue;
-          const mesh = new T.Mesh(merged(P[k]), mat); scene.add(mesh); resources.add(mesh.geometry);
+          if (k === "signbox" || !P[k].length) continue;
+          const list = k === "dark" ? P.dark.concat(P.signbox) : P[k];
+          const mesh = new T.Mesh(merged(list), mat); scene.add(mesh); resources.add(mesh.geometry);
         }
         if (stoolSpots2.length) { const sm = instances(makeStool(), tableMetal, stoolSpots2); resources.add(sm.geometry); }
         if (bottleSpots.length) {
@@ -935,18 +875,17 @@ window.ArenaSeatView = (function () {
         }
         // Лайтбокс „BAR" (четири лица) под гредата: чете се от трибуните, пода и зоната.
         if (signSpots.length) {
-          const SW = 2.7, SH = 1.1, face = mkSign("BAR", SW, SH, 512), edge = new T.MeshBasicMaterial({ color: GOLD });
+          const SW = signSpots[0].w, SH = signSpots[0].h, face = mkSign("BAR", SW, SH, 512), edge = new T.MeshBasicMaterial({ color: GOLD });
           resources.add(edge);
           const signGeo = new T.BoxGeometry(SW, SH, SW); resources.add(signGeo);
-          for (const [sx, sy, sz] of signSpots) {
-            const sign = new T.Mesh(signGeo, [face, face, edge, edge, face, face]); sign.position.set(sx, sy + SH / 2, sz); scene.add(sign);
+          for (const q of signSpots) {
+            const sign = new T.Mesh(signGeo, [face, face, edge, edge, face, face]); sign.position.set(q.x, q.y + SH / 2, q.z); scene.add(sign);
           }
         }
-        // „FOH" на навеса: две малки плоски табели (предна и задна).
-        if (fohAt.length) {
-          const fm = mkSign("FOH", 2.6, .6, 256), pg = new T.PlaneGeometry(2.6, .6); resources.add(pg);
-          // Първата табела е откъм зоната (гледа към -z), втората - откъм трибуните.
-          fohAt.forEach(([x, y, z], i) => { const m = new T.Mesh(pg, fm); m.position.set(x, y, z); if (!i) m.rotation.y = Math.PI; scene.add(m); });
+        // „FOH": малка осветена табела на ниската ограда, отпред и отзад (до 1.3 м от пода).
+        if (props.fohSigns.length) {
+          const q0 = props.fohSigns[0], fm = mkSign("FOH", q0.w, q0.h, 256), pg = new T.PlaneGeometry(q0.w, q0.h); resources.add(pg);
+          for (const q of props.fohSigns) { const m = new T.Mesh(pg, fm); m.position.set(q.x, q.y, q.z); if (q.toward < 0) m.rotation.y = Math.PI; scene.add(m); }
         }
       }
       // ======== край на блока БАРОВЕ И FOH ========
@@ -979,7 +918,7 @@ window.ArenaSeatView = (function () {
         homePitch = Math.atan2(dir.y, Math.hypot(dir.x, dir.z));
       const viewpoint = el('select', 'arena-view__viewpoint');
       viewpoint.setAttribute('aria-label', 'Изберете място за оглед');
-      const originalOption = el('option', '', options.title); originalOption.value = ''; viewpoint.append(originalOption);
+      const originalOption = el('option', '', options.title); originalOption.value = own.properties.mk; viewpoint.append(originalOption);
       for(const seat of options.selected || []) {const option=el('option','',seat.title);option.value=seat.mk;viewpoint.append(option);}
       for(const table of tables) {const option=el('option','',table.properties.name);option.value=table.properties.mk;viewpoint.append(option);}
       controls.prepend(viewpoint);
