@@ -252,7 +252,7 @@ window.ArenaSeatView = (function () {
       }
       const count = v.seats.features.length,
         matrix = new T.Object3D();
-      function roundedBox(width, height, depth, radius) {
+      function roundedBox(width, height, depth, radius, detail) {
         const shape = new T.Shape();
         const x = -width / 2,
           y = -height / 2,
@@ -271,7 +271,7 @@ window.ArenaSeatView = (function () {
         shape.quadraticCurveTo(x, y + height, x, y + height - r);
         shape.lineTo(x, y + r);
         shape.quadraticCurveTo(x, y, x + r, y);
-        const geo = new T.ExtrudeGeometry(shape, {
+        const geo = new T.ExtrudeGeometry(shape, Object.assign({
           depth,
           bevelEnabled: true,
           bevelThickness: 0.014,
@@ -279,45 +279,86 @@ window.ArenaSeatView = (function () {
           bevelSegments: 2,
           steps: 1,
           curveSegments: 4,
-        });
+        }, detail));
         geo.translate(0, 0, -depth / 2);
         return geo;
       }
-      const cushion = roundedBox(0.41, 0.38, 0.07, 0.05);
-      cushion.rotateX(-Math.PI / 2);
-      const bottoms = new T.InstancedMesh(cushion, red, count),
-        backs = new T.InstancedMesh(
-          roundedBox(0.41, 0.45, 0.065, 0.075),
-          red,
-          count,
-        );
+      // ---- Местата: три нива на детайл по разстоянието до гледната точка ----
+      // Камерата само се върти, затова разстоянието до всяко място е постоянно за гледната точка:
+      // до 12 м пълният модел (236 триъгълника на част), до 30 м скосен (60), по-далече кутия с
+      // размерите на скосения модел (12). Всяко ниво е на парчета по посока (клинове), за да
+      // отпада от кадъра това, което е зад гърба. Със 11 878 места пълният модел беше 5.6 от
+      // 6 млн. триъгълника на кадър; сега са около 0.7 млн. и наблизо изглеждат същите.
+      const SEAT_PARTS = { cushion: [0.41, 0.38, 0.07, 0.05], back: [0.41, 0.45, 0.065, 0.075] };
+      const SEAT_LOD = [{ maxD: 12, wedges: 1 }, { maxD: 30, wedges: 8 }, { maxD: Infinity, wedges: 16 }];
+      function seatGeometry(part, tier) {
+        const [w, h, d, r] = SEAT_PARTS[part];
+        const geo = tier === 0 ? roundedBox(w, h, d, r)
+          : tier === 1 ? roundedBox(w, h, d, r, { bevelSegments: 1, curveSegments: 1 })
+            : new T.BoxGeometry(w + 0.03, h + 0.03, d + 0.028);
+        if (part === "cushion") geo.rotateX(-Math.PI / 2);
+        return geo;
+      }
+      const seatSets = SEAT_LOD.map((lod, tier) => {
+        const geometry = { cushion: seatGeometry("cushion", tier), back: seatGeometry("back", tier) };
+        return Array.from({ length: lod.wedges }, () => {
+          const set = { cushion: new T.InstancedMesh(geometry.cushion, red, 1), back: new T.InstancedMesh(geometry.back, red, 1) };
+          for (const mesh of [set.cushion, set.back]) { mesh.count = 0; mesh.visible = false; scene.add(mesh); }
+          return set;
+        });
+      });
       const ownPoint = own.geometry.coordinates;
+      const seatX = new Float32Array(count), seatZ = new Float32Array(count), seatOn = new Uint8Array(count);
+      const seatMatrix = { cushion: new Float32Array(count * 16), back: new Float32Array(count * 16) };
       v.seats.features.forEach((f, i) => {
         const p = f.geometry.coordinates,
           y = f.properties.el * scale,
           angle = f.properties.seatYaw || 0;
-        if (f.properties.el === 0) {
-          matrix.scale.set(0, 0, 0); matrix.updateMatrix();
-          bottoms.setMatrixAt(i, matrix.matrix); backs.setMatrixAt(i, matrix.matrix);
-          matrix.scale.set(1, 1, 1); return;
-        }
+        // Място на нулева височина не се рисува (преди беше инстанция с нулев размер).
+        if (f.properties.el === 0) return;
+        seatOn[i] = 1; seatX[i] = p[0] * scale; seatZ[i] = -p[1] * scale;
         matrix.rotation.set(0, angle, 0);
         matrix.position.set(p[0] * scale, y + 0.45, -p[1] * scale);
         matrix.updateMatrix();
-        bottoms.setMatrixAt(i, matrix.matrix);
+        seatMatrix.cushion.set(matrix.matrix.elements, i * 16);
         matrix.position.x += Math.sin(angle) * 0.18;
         matrix.position.z += Math.cos(angle) * 0.18;
         matrix.position.y = y + 0.69;
         matrix.updateMatrix();
-        backs.setMatrixAt(i, matrix.matrix);
+        seatMatrix.back.set(matrix.matrix.elements, i * 16);
       });
-      scene.add(bottoms, backs);
+      // Разпределя местата по нива и клинове спрямо гледната точка (x, z в метри).
+      function applySeatLod(cx, cz) {
+        const groups = SEAT_LOD.map((lod) => Array.from({ length: lod.wedges }, () => []));
+        for (let i = 0; i < count; i++) {
+          if (!seatOn[i]) continue;
+          const dx = seatX[i] - cx, dz = seatZ[i] - cz, dist = Math.hypot(dx, dz);
+          const tier = dist <= SEAT_LOD[0].maxD ? 0 : dist <= SEAT_LOD[1].maxD ? 1 : 2;
+          const wedges = SEAT_LOD[tier].wedges;
+          const wedge = wedges === 1 ? 0 : Math.min(wedges - 1, Math.floor((Math.atan2(dx, -dz) + Math.PI) / (2 * Math.PI) * wedges));
+          groups[tier][wedge].push(i);
+        }
+        groups.forEach((tierGroups, tier) => tierGroups.forEach((ids, wedge) => {
+          const set = seatSets[tier][wedge];
+          for (const part of ["cushion", "back"]) {
+            const mesh = set[part], source = seatMatrix[part];
+            if (mesh.instanceMatrix.count < ids.length) mesh.instanceMatrix = new T.InstancedBufferAttribute(new Float32Array(ids.length * 16), 16);
+            const target = mesh.instanceMatrix.array;
+            for (let k = 0; k < ids.length; k++) target.set(source.subarray(ids[k] * 16, ids[k] * 16 + 16), k * 16);
+            mesh.count = ids.length;
+            mesh.visible = ids.length > 0;
+            mesh.instanceMatrix.needsUpdate = true;
+            mesh.boundingSphere = null;
+          }
+        }));
+      }
+      applySeatLod(ownPoint[0] * scale, -ownPoint[1] * scale);
       // Actual concert stage outline (including runway), not a generic rectangle.
       const stageMat = new T.MeshStandardMaterial({
         color: 0x18223c,
         roughness: 0.75,
       });
-      extrude(v.stage.geometry.coordinates[0], 0.4, 0, stageMat);
+      extrude(v.stage.geometry.coordinates[0], G.STAGE_RISE, 0, stageMat);
       const stagePoints = v.stage.geometry.coordinates[0],
         minX = Math.min(...stagePoints.map((p) => p[0])),
         maxX = Math.max(...stagePoints.map((p) => p[0])),
@@ -931,6 +972,7 @@ window.ArenaSeatView = (function () {
         // Гледната точка на масата е от един от двата бар стола.
         if(currentTable){const [dx,dz]=STOOLS[chairPosition%STOOLS.length];camera.position.x+=dx;camera.position.z+=dz;}
         const direction=look.clone().sub(camera.position);homeYaw=Math.atan2(direction.x,-direction.z);homePitch=Math.atan2(direction.y,Math.hypot(direction.x,direction.z));
+        applySeatLod(camera.position.x,camera.position.z);
         setDrinkOwn(currentTable?tables.indexOf(currentTable):-1);
         yaw=homeYaw;pitch=homePitch;fov=70;tableChair.hidden=!currentTable;
         const име=currentTable?currentTable.properties.name+' · стол '+(chairPosition+1):viewpoint.selectedOptions[0].textContent;

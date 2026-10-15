@@ -33,7 +33,7 @@
       href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%23FFFFFF%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-family=%27Helvetica,Arial%27 font-size=%2717%27 font-weight=%27bold%27 fill=%27%23153D8A%27 text-anchor=%27middle%27%3E8%3C/text%3E%3C/svg%3E"
     />
     <link rel="stylesheet" href="vendor/maplibre-gl.css?v=e6e97fa50c.7.1" />
-    <link rel="stylesheet" href="styles.css?v=fdac4ea08a" />
+    <link rel="stylesheet" href="styles.css?v=81b3993df0" />
   </head>
   <body>
     <div id="app">
@@ -60,11 +60,42 @@
         </div>
         <div class="topbar-right">
           <span class="live-chip"><span class="live-dot" aria-hidden="true"></span>Схема на събитието</span>
+          <button id="startup-try3d" class="try3d" type="button" hidden><span class="try3d-long">Опитайте </span>3D схемата</button>
         </div>
       </header>
 
       <div class="workspace">
         <main id="map" class="map-pane" aria-label="Интерактивна карта на залата">
+          <!-- Моментална картинка на залата, докато се зарежда схемата: тя е самата карта
+               в същата рамка (tools/render-previews.cjs), не заместител. Стои в пространство,
+               което вече е резервирано, и не хваща докосвания. startup.js слага 2D вариантите
+               (data-plan-*), когато няма WebGL, и я стопява при готова карта. -->
+          <div
+            id="map-boot"
+            class="map-boot"
+            aria-hidden="true"
+            data-plan-desktop="assets/preview-plan-desktop.webp?v=f29ed11c0a"
+            data-plan-desktop-size="1040x836"
+            data-plan-mobile="assets/preview-plan-mobile.webp?v=aa5d894036"
+            data-plan-mobile-size="780x1298"
+          >
+            <picture>
+              <source
+                media="(max-width: 880px)"
+                srcset="assets/preview-map-mobile.webp?v=2f41034487"
+                width="780"
+                height="1298"
+              />
+              <img
+                src="assets/preview-map-desktop.webp?v=a97d5549f5"
+                width="1440"
+                height="836"
+                alt=""
+                decoding="async"
+                fetchpriority="high"
+              />
+            </picture>
+          </div>
         </main>
 
         <aside class="sidebar" id="sheet">
@@ -159,15 +190,16 @@
     </section>
     <script type="application/json" data-webgl="true" data-src="vendor/maplibre-gl.js?v=8d00c7860a.7.1"></script>
     <script type="application/json" data-src="venue-data-ceca.js?v=60b59de029"></script>
-    <script type="application/json" data-webgl="true" data-src="arena-geometry.js?v=73ad681b69"></script>
-    <script type="application/json" data-webgl="true" data-src="arena-seatview.js?v=20bcbc9c28"></script>
+    <script type="application/json" data-webgl="true" data-src="arena-geometry.js?v=f83a93531b"></script>
+    <script type="application/json" data-webgl="true" data-src="arena-seatview.js?v=a47709ae60"></script>
     <script type="application/json" data-svg="true" data-src="ceca-plan-svg.js?v=c44dc5ffbb"></script>
-    <script type="application/json" data-fallback="map-svg.js?v=db7466efae" data-src="map.js?v=016f37351b"></script>
+    <script type="application/json" data-fallback="map-svg.js?v=07b31664c6" data-src="map.js?v=fb24f57ecd"></script>
     <script type="application/json" data-webgl="true" data-src="seatview3d.js?v=0919ec099f"></script>
     <script type="application/json" data-src="seatfinder.js?v=fe332e5646"></script>
-    <script type="application/json" data-src="ui.js?v=ba266a5501"></script>
-    <script type="application/json" data-src="app.js?v=321fea4aef"></script>
+    <script type="application/json" data-src="party-memory.js?v=3a34c34cdf"></script>
+    <script type="application/json" data-src="ui.js?v=f598ebf456"></script>
+    <script type="application/json" data-src="app.js?v=1d9590db0d"></script>
     <script type="application/json" data-src="sheet.js?v=98567e79ad"></script>
-    <script src="startup.js?v=7ac92fcf1a"></script>
+    <script src="startup.js?v=49469c1731"></script>
   </body>
 </html>

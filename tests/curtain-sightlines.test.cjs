@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
+const { stageSurfaceTargets } = require('./sightline-targets.cjs');
 const context = { window: {}, structuredClone };
 vm.createContext(context);
 for (const file of ['venue-data-ceca.js', 'arena-geometry.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), context);
@@ -48,9 +49,9 @@ function blocked(p, q) {
   }
   return false;
 }
-// Мишени: предният ръб на сцената (~30 точки) и главният екран (6 x 4 точки).
+// Мишени: мрежа по повърхността на сцената (на височината, която рисува изгледът) и главният екран (6 x 4 точки).
 const st = venue.stage.geometry.coordinates[0], sx0 = Math.min(...st.map((p) => p[0])) * S, sx1 = Math.max(...st.map((p) => p[0])) * S;
-const stageTargets = Array.from({ length: 30 }, (_, i) => [sx0 + (sx1 - sx0) * (i + .5) / 30, 0.4, panels.stageFront]);
+const stageTargets = stageSurfaceTargets(G, venue, 1.5);
 const screenZ = panels.stageBack + .27, screenTargets = [];
 for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) screenTargets.push([sx0 + (sx1 - sx0) * (i + .5) / 6, 1.35 + 10.8 * (j + .5) / 4, screenZ]);
 const share = (eye, targets) => targets.filter((t) => !blocked(eye, t)).length / targets.length;
@@ -73,7 +74,7 @@ test('negative control: a full-height wall in front of the closed blocks would b
   assert.ok(bad.length > 20, 'the control wall should fail for many seats, failed for ' + bad.length);
 });
 
-test('every sampled on-sale seat sees at least 70% of the screen and 50% of the stage front', () => {
+test('every sampled on-sale seat sees at least 70% of the screen and 50% of the stage surface', () => {
   const worst = results.slice().sort((a, b) => (a.screen + a.stage) - (b.screen + b.stage)).slice(0, 5);
   console.log('seats tested:', results.length, '\nworst 5:\n' + worst.map((r) => `  ${r.q.s} r${r.q.r} t${r.q.t}  screen ${(r.screen * 100).toFixed(0)}%  stage ${(r.stage * 100).toFixed(0)}%`).join('\n'));
   console.log('min screen', Math.min(...results.map((r) => r.screen)), 'min stage', Math.min(...results.map((r) => r.stage)));

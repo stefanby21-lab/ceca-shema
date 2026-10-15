@@ -14,13 +14,13 @@ function app(options = {}) {
   const storage = new Map(Object.entries(options.storage || {}));
   const noop = () => {};
   const context = { console, URLSearchParams, setTimeout, matchMedia: () => ({ matches: false }),
-    location: { hostname: 'test', search: options.search || '', pathname: '/' },
-    history: { replaceState: noop }, sessionStorage: { getItem: k => storage.get(k), setItem: (k, v) => storage.set(k, v), removeItem: k => storage.delete(k) },
+    location: { hostname: 'test', search: options.search || '', pathname: '/', hash: options.hash || '' },
+    history: { replaceState: options.replaceState || noop }, sessionStorage: { getItem: k => storage.get(k), setItem: (k, v) => storage.set(k, v), removeItem: k => storage.delete(k) },
     document: { readyState: 'complete', getElementById: () => null, querySelector: () => null },
     MutationObserver: class { observe() {} disconnect() {} },
     CustomEvent: class { constructor(name, options) { this.type = name; this.detail = options.detail; } },
   };
-  context.window = { location: context.location, matchMedia: context.matchMedia, addEventListener: noop, dispatchEvent: noop };
+  context.window = { SeatMapStartup: options.startup, location: context.location, matchMedia: context.matchMedia, addEventListener: noop, dispatchEvent: noop };
   vm.createContext(context);
   for (const file of ['venue-data-ceca.js', 'seatfinder.js']) vm.runInContext(read(file), context);
   const ui = { openGate: options => state.gate = options, renderFilterBar: (_, handlers) => state.filters = handlers,
@@ -28,7 +28,7 @@ function app(options = {}) {
     notify: notice => state.notices.push(notice) };
   context.window.UI = new Proxy(ui, { get: (obj, key) => obj[key] || noop });
   const selections = [];
-  context.window.SeatMap = new Proxy({ init: options => { state.map = options; return { getZoom: () => 20 }; },
+  context.window.SeatMap = new Proxy({ init: options.mapInit || (init => { state.map = init; return { getZoom: () => 20 }; }),
     selectStanding: on => selections.push(!!on) }, { get: (obj, key) => obj[key] || noop });
   vm.runInContext(read('app.js'), context);
   state.selections = selections;
@@ -211,4 +211,24 @@ test('the SVG plan exposes the standing zone as a keyboard-reachable button with
   const plan = (() => { const c = { window: {} }; vm.createContext(c); vm.runInContext(read('ceca-plan-svg.js'), c); return c.window.CecaPlanSVG; })();
   assert.equal([...plan.matchAll(/<g\b[^>]*data-kind="standing"/g)].length, 1);
   assert.match(plan, /data-key="z:Standing"/);
+});
+
+test('coming back from checkout removes only the restore parameter, keeping view, event and the hash', () => {
+  const calls = [];
+  app({ search: '?view=2d&event=concert&restore=1', hash: '#selection', replaceState: (_s, _t, url) => calls.push(url) });
+  assert.deepEqual(calls, ['/?view=2d&event=concert#selection']);
+  const only = [];
+  app({ search: '?restore=1', replaceState: (_s, _t, url) => only.push(url) });
+  assert.deepEqual(only, ['/']);
+});
+
+test('an exception while the app starts goes explicitly to the startup failure screen, whatever its shape', () => {
+  for (const reason of [{ code: 3 }, 'plain', undefined, new Error('boom')]) {
+    const failures = [];
+    assert.doesNotThrow(() => app({ startup: { fail: r => failures.push(r) }, mapInit: () => { throw reason; } }));
+    assert.equal(failures.length, 1);
+    assert.equal(failures[0], reason);
+  }
+  // Без startup.js грешката не се поглъща.
+  assert.throws(() => app({ mapInit: () => { throw new Error('boom'); } }), /boom/);
 });

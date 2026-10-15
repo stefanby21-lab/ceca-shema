@@ -55,8 +55,44 @@ window.SeatMap = (function () {
     // Bounds keep an accidental pan from losing the entire hall.
     camera.x = Math.max(fullBounds.x - camera.w * .5, Math.min(fullBounds.x + fullBounds.w - camera.w * .5, camera.x));
     camera.y = Math.max(fullBounds.y - camera.h * .5, Math.min(fullBounds.y + fullBounds.h - camera.h * .5, camera.y));
+    // Докато пръстът е върху картата, чертежът не се прерисува: viewBox стои замразен, а
+    // кадърът се получава с CSS преобразуване на целия SVG (композитор, без растеризиране
+    // на 16 хиляди възела). Точният кадър се записва веднъж, при пускане (endLive).
+    if (live) paintLive();
+    else {
+      svg.setAttribute('viewBox', [camera.x, camera.y, camera.w, camera.h].join(' '));
+    }
+    emit('move'); if (!live) schedule(false);
+  }
+  let live = null;
+  function beginLive() {
+    if (live) return;
+    live = { base: { x: camera.x, y: camera.y, w: camera.w, h: camera.h } };
+    svg.style.transformOrigin = '0 0';
+    svg.style.willChange = 'transform';
+    // Номерата са за точния кадър: при движение се скриват и се връщат при пускане.
+    numbers.style.display = 'none';
+  }
+  function paintLive() {
+    const k = live.base.w / camera.w, w = host.clientWidth, h = host.clientHeight;
+    const tx = (live.base.x - camera.x) / camera.w * w, ty = (live.base.y - camera.y) / camera.h * h;
+    svg.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + k + ')';
+  }
+  function endLive() {
+    if (!live) return;
+    live = null;
+    svg.style.transform = '';
+    svg.style.willChange = '';
+    svg.style.transformOrigin = '';
+    numbers.style.display = '';
     svg.setAttribute('viewBox', [camera.x, camera.y, camera.w, camera.h].join(' '));
-    emit('move'); schedule(false);
+    schedule(false);
+  }
+  // Точка на екрана -> координати на чертежа за ТЕКУЩИЯ кадър; не ползва getScreenCTM,
+  // защото при живо преобразуване той описва замразения viewBox.
+  function worldAt(clientX, clientY) {
+    const box = host.getBoundingClientRect();
+    return { x: camera.x + (clientX - box.left) / box.width * camera.w, y: camera.y + (clientY - box.top) / box.height * camera.h };
   }
   function frame(features, padding = 55) {
     if (!features.length) return;
@@ -203,8 +239,13 @@ window.SeatMap = (function () {
         node.setAttribute('aria-label', label(p, table));
       }
       const visible = detail && within(positions.get(key));
-      node.setAttribute('tabindex', visible ? '0' : '-1');
-      if (!table) node.setAttribute('aria-hidden', String(!visible));
+      // Атрибутите се пишат само при промяна: 12 хиляди места по два записа на кадър бяха
+      // главната цена на всяко движение.
+      if (node.__visible !== visible) {
+        node.__visible = visible;
+        node.setAttribute('tabindex', visible ? '0' : '-1');
+        if (!table) node.setAttribute('aria-hidden', String(!visible));
+      }
       if (visible && !table) {
         const [x, y] = positions.get(key), radius = Number(node.getAttribute('r'));
         if (radius * 2 / camera.w * host.clientWidth >= 16) {
@@ -273,14 +314,14 @@ window.SeatMap = (function () {
       pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       const current = Array.from(pointers.values());
       if (current.length === 2) {
-        moved = true;
+        moved = true; beginLive();
         const before = Math.hypot(previous[0].x - previous[1].x, previous[0].y - previous[1].y);
         const after = Math.hypot(current[0].x - current[1].x, current[0].y - current[1].y);
-        if (before && after) zoom(before / after, local((current[0].x + current[1].x) / 2, (current[0].y + current[1].y) / 2));
+        if (before && after) zoom(before / after, worldAt((current[0].x + current[1].x) / 2, (current[0].y + current[1].y) / 2));
       } else if (drag) {
         const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
         if (!moved && Math.hypot(dx, dy) < 5) return;
-        moved = true;
+        moved = true; beginLive();
         setCamera({ ...camera, x: camera.x - dx * camera.w / host.clientWidth, y: camera.y - dy * camera.h / host.clientHeight });
       }
       drag = { x: event.clientX, y: event.clientY };
@@ -292,7 +333,7 @@ window.SeatMap = (function () {
         activate(document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-key]'));
         moved = true; // suppress the browser's following click
       }
-      pointers.delete(event.pointerId); drag = null; emit('moveend');
+      pointers.delete(event.pointerId); drag = null; endLive(); emit('moveend');
     }
     svg.addEventListener('pointerup', end);
     svg.addEventListener('pointercancel', end);

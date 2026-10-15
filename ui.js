@@ -1471,6 +1471,7 @@
                 m === r && k.classList.add("is-active"),
                 k.addEventListener("click", function () {
                   ((r = m),
+                    window.PartyMemory && window.PartyMemory.write(m),
                     b.forEach(function (q) {
                       q.classList.remove("is-active");
                       q.setAttribute("aria-pressed", "false");

@@ -5,7 +5,11 @@
   "use strict";
   const SCALE = 3,
     RISE = 0.099,
-    BASE = { 0: 0, 1: 0.27, 2: 1.755, 3: 3.78 };
+    BASE = { 0: 0, 1: 0.27, 2: 1.755, 3: 3.78 },
+    // Сцената се издига на STAGE_RISE (в единиците на плана); в метри това е STAGE_RISE * SCALE.
+    // Изгледът я рисува с тази височина и тестовете на линиите на зрение целят ПОВЪРХНОСТТА ѝ
+    // на същата височина - едно място за числото, за да не се разминат.
+    STAGE_RISE = 0.4;
   function apply(venue) {
     const rows = new Map();
     for (const f of venue.seats.features) {
@@ -292,5 +296,5 @@
       }
     return best ? { w: best.w, h: best.h } : { w: 1, h: 1 };
   }
-  root.ArenaGeometry = { apply, band, forView, viewPoint, terraces, fitCanvas, curtainPanels, floorProps, SCALE, RISE, BASE };
+  root.ArenaGeometry = { apply, band, forView, viewPoint, terraces, fitCanvas, curtainPanels, floorProps, SCALE, RISE, BASE, STAGE_RISE, STAGE_HEIGHT_M: STAGE_RISE * SCALE };
 })(typeof window === "undefined" ? globalThis : window);

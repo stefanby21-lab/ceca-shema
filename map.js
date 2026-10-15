@@ -2581,6 +2581,7 @@ window.SeatMap = (function () {
       }),
       A && i.touchZoomRotate && i.touchZoomRotate.disableRotation(),
       i.on("load", function () {
+        try {
         (Nz(),
           Be(),
           yt(),
@@ -2606,6 +2607,12 @@ window.SeatMap = (function () {
           Yt !== void 0 && (Jt(Yt), (Yt = void 0)),
           ee !== void 0 && (ve(ee), (ee = void 0)));
         i.once("idle", function () { window.SeatMapStartup && window.SeatMapStartup.mapReady(); });
+        } catch (err) {
+          // Провал при зареждането на слоевете отива изрично в startup.js, с каквато и да е причина.
+          if (!(window.SeatMapStartup && typeof window.SeatMapStartup.fail === "function")) throw err;
+          window.SeatMapStartup.fail(err);
+          console.error("[map] load failed", err);
+        }
       }),
       i
     );

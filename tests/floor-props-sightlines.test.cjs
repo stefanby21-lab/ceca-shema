@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
+const { stageSurfaceTargets } = require('./sightline-targets.cjs');
 const context = { window: {}, structuredClone };
 vm.createContext(context);
 for (const file of ['venue-data-ceca.js', 'arena-geometry.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), context);
@@ -52,7 +53,8 @@ function blocked(p, q) {
   return false;
 }
 const st = venue.stage.geometry.coordinates[0], sx0 = Math.min(...st.map((p) => p[0])) * S, sx1 = Math.max(...st.map((p) => p[0])) * S;
-const stageTargets = Array.from({ length: 30 }, (_, i) => [sx0 + (sx1 - sx0) * (i + .5) / 30, 0.4, curtains.stageFront]);
+// Мишените са мрежа по ПОВЪРХНОСТТА на сцената (на височината, която рисува изгледът), не само предният ръб.
+const stageTargets = stageSurfaceTargets(G, venue, 1.5);
 const screenTargets = [];
 for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) screenTargets.push([sx0 + (sx1 - sx0) * (i + .5) / 6, 1.35 + 10.8 * (j + .5) / 4, curtains.stageBack + .27]);
 const share = (eye, targets) => targets.filter((t) => !blocked(eye, t)).length / targets.length;
@@ -70,7 +72,7 @@ test('floorProps: two bars and an FOH from the data, no canopy, FOH sign at most
   assert.ok(props.boxes.every((b) => b.w > 0 && b.h > 0 && b.d > 0));
 });
 
-test('every sampled on-sale seat, B.1.1-B.1.4 and B.2.x included, keeps 70% of the screen and 50% of the stage front', () => {
+test('every sampled on-sale seat, B.1.1-B.1.4 and B.2.x included, keeps 70% of the screen and 50% of the stage surface', () => {
   const worst = results.slice().sort((a, b) => (a.screen + a.stage) - (b.screen + b.stage)).slice(0, 5);
   console.log('seats tested:', results.length, '\nworst 5:\n' + worst.map((r) => `  ${r.q.s} r${r.q.r} t${r.q.t}  screen ${(r.screen * 100).toFixed(0)}%  stage ${(r.stage * 100).toFixed(0)}%`).join('\n'));
   const bad = results.filter((r) => r.screen < .7 || r.stage < .5);
@@ -95,6 +97,25 @@ test('negative control: a hanging fascia like the old FOH canopy (3 m up, 8.4 m 
   const q = seats.find((x) => x.s === 'B.1.3' && x.r === '5' && x.t === '1');
   const open = (t) => !blocked(eyeOf(q), t) && !canopy.some((tri) => hits(eyeOf(q), t, tri));
   assert.ok(stageTargets.filter(open).length / stageTargets.length < .5, 'the control canopy should block the stage rays');
+});
+
+test('negative control: a panel standing on the stage hides its rear half from the floor, which a front-edge-only sample would miss', () => {
+  const q = seats.find((x) => x.s === 'B.1.3' && x.r === '5' && x.t === '1');
+  // Панел на сцената, 3 м зад предния ѝ ръб, по цялата ѝ ширина, по-висок от очите на гледащия.
+  const panel = boxTris({ x: (sx0 + sx1) / 2, y: 2.5, z: curtains.stageFront - 3, w: sx1 - sx0, h: 5, d: .4 });
+  const eye = eyeOf(q);
+  const seen = (targets) => targets.filter((t) => !blocked(eye, t) && !panel.some((tri) => hits(eye, t, tri))).length / targets.length;
+  const frontEdge = Array.from({ length: 30 }, (_, i) => [sx0 + (sx1 - sx0) * (i + .5) / 30, G.STAGE_HEIGHT_M + .05, curtains.stageFront - .05]);
+  assert.ok(seen(frontEdge) >= .9, 'a front-edge sample would still pass: ' + seen(frontEdge));
+  assert.ok(seen(stageTargets) < .5, 'the surface grid must catch it: ' + seen(stageTargets));
+  assert.ok(share(eye, stageTargets) >= .9, 'without the panel the seat sees the stage surface');
+});
+
+test('the stage surface the tests aim at is the height the view draws', () => {
+  assert.equal(G.STAGE_HEIGHT_M, G.STAGE_RISE * S);
+  assert.ok(stageTargets.length >= 100 && stageTargets.every((t) => Math.abs(t[1] - (G.STAGE_HEIGHT_M + .05)) < 1e-9));
+  const src = fs.readFileSync(path.join(__dirname, '..', 'arena-seatview.js'), 'utf8');
+  assert.match(src, /extrude\(v\.stage\.geometry\.coordinates\[0\], G\.STAGE_RISE, 0, stageMat\)/);
 });
 
 test('the picker\'s original option carries the opened viewpoint id, so it resolves to the table, seat or zone', () => {

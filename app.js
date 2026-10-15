@@ -5,14 +5,24 @@
       link.href = link.getAttribute("data-local-href");
     });
   }
+  // Провал при стартиране отива изрично в startup.js (с каквато и да е причина, и без ред
+  // или стек в нея), вместо да чака изтичането на времето. Без startup.js грешката излиза.
+  function startupFailure(reason) {
+    const startup = window.SeatMapStartup;
+    if (!startup || typeof startup.fail !== "function") return false;
+    startup.fail(reason);
+    return true;
+  }
   function H() {
     const o = window.VENUE;
     if (!o) {
       console.error("[app] VENUE missing");
+      startupFailure("app: VENUE missing");
       return;
     }
     if (!window.SeatMap || !window.UI) {
       console.error("[app] SeatMap/UI missing");
+      startupFailure("app: SeatMap or UI missing");
       return;
     }
     const R = document.getElementById("map"),
@@ -169,7 +179,8 @@
       // прилага филтрите и избира най-добрата свободна група заедно.
       new URLSearchParams(window.location.search).get("restore") !== "1" && !selectionDraft?.items?.length && a(window.UI, "openGate") &&
         window.UI.openGate({
-          quantity: 2,
+          // Броят от последния час остава предварително избран; портата се показва пак.
+          quantity: (window.PartyMemory && window.PartyMemory.read()) || 2,
           feesIncluded: i.feesIncluded,
           tiers: null,
           count: redove,
@@ -1544,7 +1555,12 @@
           y();
           ne(selT.length ? selT[selT.length - 1] : sel.length ? sel[sel.length - 1] : STANDING_MK);
         }
-        history.replaceState(null, "", window.location.pathname + window.location.hash);
+        // Само restore се маха от адреса; view, event и другите параметри остават, иначе
+        // презареждането би върнало WebGL пътя, от който вече се е паднало към 2D.
+        const rest = new URLSearchParams(window.location.search);
+        rest.delete("restore");
+        const restQuery = rest.toString();
+        history.replaceState(null, "", window.location.pathname + (restQuery ? "?" + restQuery : "") + (window.location.hash || ""));
       } catch (err) {}
     }
     window.addEventListener('pagehide', () => {
@@ -1644,5 +1660,13 @@
       console.log("[app] ready"));
     window.SeatMapStartup && window.SeatMapStartup.appReady();
   }
-  document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", H) : H();
+  function boot() {
+    try {
+      H();
+    } catch (err) {
+      if (!startupFailure(err)) throw err;
+      console.error("[app] startup failed", err);
+    }
+  }
+  document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();
 })();
