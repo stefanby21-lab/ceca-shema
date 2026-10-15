@@ -321,43 +321,111 @@ window.ArenaSeatView = (function () {
       const screenHousing = new T.MeshStandardMaterial({color:0x101319, roughness:.85});
       box(stageWidth + .7, screenHeight + .6, .5, stageCenter,
         screenBase + screenHeight / 2, stageBack, screenHousing);
-      const banner = el("canvas");
-      banner.width = 2048; banner.height = 720;
-      const ctx = banner.getContext("2d");
-      const gradient = ctx.createLinearGradient(0, 0, banner.width, banner.height);
-      gradient.addColorStop(0, '#0c121d'); gradient.addColorStop(.55, '#263238'); gradient.addColorStop(1, '#080c12');
-      ctx.fillStyle = gradient; ctx.fillRect(0, 0, banner.width, banner.height);
+      // ---- Афишът на екрана ----
+      // Платното има точно съотношението на равнината (иначе буквите се
+      // разтягат) и всичко се смята от размера му. Шрифтът е този на страницата,
+      // ако е зареден за малко; иначе удебелен sans-serif.
+      const posterFont = '"Sofia Sans", system-ui, "Helvetica Neue", Arial, sans-serif';
+      try {
+        await Promise.race([
+          Promise.all(["900 100px", "800 100px"].map((w) => document.fonts.load(w + ' "Sofia Sans"', "CECAКонцертНОЕМВРИ"))),
+          new Promise((done) => setTimeout(done, 1500)),
+        ]);
+      } catch (_) {}
+      if (disposed) return;
       const poster = new Image(); poster.src = 'assets/ceca.webp';
       try { await poster.decode(); } catch (_) {}
       if (disposed) return;
-      if (poster.naturalWidth) {
-        ctx.save(); ctx.beginPath(); ctx.rect(0, 0, 650, 720); ctx.clip();
-        const ratio = 650 / poster.naturalWidth, shown = poster.naturalHeight * ratio;
-        // Афишът е квадрат: стои по средата на височината, не залепен отгоре.
-        ctx.drawImage(poster, 0, Math.max(0, (720 - shown) / 2), 650, shown); ctx.restore();
-        const fade = ctx.createLinearGradient(450, 0, 690, 0);
-        fade.addColorStop(0, '#151e2600'); fade.addColorStop(1, '#151e26');
-        ctx.fillStyle = fade; ctx.fillRect(450, 0, 240, 720);
+      const maxTex = Math.min(renderer.capabilities.maxTextureSize, 4096);
+      // Текст, смален да се събере в зададена ширина (ширината е в пиксели).
+      function fitText(c, text, size, weight, width, spacing = 0) {
+        let px = size;
+        c.font = weight + " " + px + "px " + posterFont;
+        if ("letterSpacing" in c) c.letterSpacing = spacing * px + "px";
+        while (px > 8 && c.measureText(text).width > width) {
+          px *= .96; c.font = weight + " " + px + "px " + posterFont;
+          if ("letterSpacing" in c) c.letterSpacing = spacing * px + "px";
+        }
+        return px;
       }
-      ctx.strokeStyle = '#b9a675'; ctx.lineWidth = 2;
-      ctx.strokeRect(715, 85, 1245, 550);
-      const textCenter = 1338;
-      ctx.textAlign = 'center'; ctx.fillStyle = '#d3c49b';
-      ctx.font = '500 28px sans-serif'; ctx.fillText('К О Н Ц Е Р Т', textCenter, 235);
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 210px sans-serif';
-      ctx.fillText('CECA', textCenter, 410, 1160);
-      ctx.fillStyle = '#d3c49b'; ctx.font = '28px sans-serif';
-      ctx.fillText('7 НОЕМВРИ 2026 · АРЕНА 8888', textCenter, 510);
-      const texture = new T.CanvasTexture(banner);
-      texture.colorSpace = T.SRGBColorSpace;
-      texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
-      resources.add(texture);
+      // Афишът е квадрат: рисува се като квадрат, без изкривяване.
+      function drawPoster(c, x, y, size) {
+        if (!poster.naturalWidth) return;
+        c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = "high";
+        c.drawImage(poster, x, y, size, size); c.restore();
+      }
+      function makeTexture(canvas) {
+        const t = new T.CanvasTexture(canvas);
+        t.colorSpace = T.SRGBColorSpace;
+        t.generateMipmaps = true;
+        t.minFilter = T.LinearMipmapLinearFilter;
+        t.magFilter = T.LinearFilter;
+        t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        resources.add(t);
+        return t;
+      }
+      // Главният екран: платното следва равнината stageWidth x screenHeight.
+      const bannerH = 1024, bannerW = Math.min(maxTex, Math.round(bannerH * stageWidth / screenHeight));
+      const banner = el("canvas");
+      banner.width = bannerW; banner.height = bannerH;
+      const ctx = banner.getContext("2d");
+      const gradient = ctx.createLinearGradient(0, 0, bannerW, bannerH);
+      gradient.addColorStop(0, '#0c121d'); gradient.addColorStop(.55, '#263238'); gradient.addColorStop(1, '#080c12');
+      ctx.fillStyle = gradient; ctx.fillRect(0, 0, bannerW, bannerH);
+      const margin = Math.round(bannerH * .04), side = bannerH - margin * 2;
+      drawPoster(ctx, margin, margin, side);
+      // Мек преход от афиша към тъмния фон.
+      const fadeFrom = margin + side * .8, fadeTo = margin + side + bannerH * .07;
+      const fade = ctx.createLinearGradient(fadeFrom, 0, fadeTo, 0);
+      fade.addColorStop(0, 'rgba(21,30,38,0)'); fade.addColorStop(1, 'rgba(21,30,38,1)');
+      ctx.fillStyle = fade; ctx.fillRect(fadeFrom, 0, fadeTo - fadeFrom, bannerH);
+      // Текстовият блок е вдясно от афиша; всичко е в дялове от височината.
+      const boxX = margin + side + bannerH * .07, boxR = bannerW - margin, boxW = boxR - boxX, centerX = (boxX + boxR) / 2;
+      ctx.strokeStyle = '#d9c58f'; ctx.lineWidth = Math.max(2, bannerH * .005);
+      ctx.strokeRect(boxX, bannerH * .1, boxW, bannerH * .8);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = '#f0d9a0';
+      fitText(ctx, 'КОНЦЕРТ', bannerH * .07, 800, boxW * .8, .14); ctx.fillText('КОНЦЕРТ', centerX, bannerH * .3);
+      ctx.fillStyle = '#ffffff';
+      fitText(ctx, 'CECA', bannerH * .34, 900, boxW * .86, .01); ctx.fillText('CECA', centerX, bannerH * .64);
+      ctx.fillStyle = '#f0d9a0';
+      fitText(ctx, '7 НОЕМВРИ 2026 · АРЕНА 8888', bannerH * .08, 800, boxW * .88, .01); ctx.fillText('7 НОЕМВРИ 2026 · АРЕНА 8888', centerX, bannerH * .8);
+      const texture = makeTexture(banner);
       const screen = new T.Mesh(
         new T.PlaneGeometry(stageWidth, screenHeight),
         new T.MeshBasicMaterial({ map: texture }),
       );
       screen.position.set(stageCenter, screenBase + screenHeight / 2, stageBack + .27);
       scene.add(screen);
+
+      // Два странични IMAG екрана, както на истински концерти: квадратният афиш
+      // и „CECA · 7.11.2026" под него, на един общ текстурен кадър. Стоят отвън на
+      // завесите, пред кулите, завъртени към страничните трибуни - не закриват
+      // главния екран нито от пода, нито от трибуните.
+      const sideW = 1024, sideH = 1280, sideCanvas = el("canvas");
+      sideCanvas.width = sideW; sideCanvas.height = sideH;
+      const sc = sideCanvas.getContext("2d");
+      const sg = sc.createLinearGradient(0, 0, sideW, sideH);
+      sg.addColorStop(0, '#0c121d'); sg.addColorStop(.55, '#263238'); sg.addColorStop(1, '#080c12');
+      sc.fillStyle = sg; sc.fillRect(0, 0, sideW, sideH);
+      const sm = Math.round(sideW * .045), ss = sideW - sm * 2;
+      drawPoster(sc, sm, sm, ss);
+      sc.textAlign = 'center'; sc.textBaseline = 'alphabetic'; sc.fillStyle = '#ffffff';
+      const rest = sideH - sm * 2 - ss;
+      fitText(sc, 'CECA · 7.11.2026', rest * .6, 900, ss * .96, .02);
+      sc.fillText('CECA · 7.11.2026', sideW / 2, sm * 2 + ss + rest * .62);
+      const sideTexture = makeTexture(sideCanvas);
+      const imagH = 4.6, imagW = imagH * sideW / sideH, imagBase = 3.4;
+      const imagGeo = new T.PlaneGeometry(imagW, imagH), imagMat = new T.MeshBasicMaterial({ map: sideTexture });
+      const imagTowerMat = new T.MeshStandardMaterial({ color: 0x101319, roughness: .85 });
+      for (const dir of [-1, 1]) {
+        const x = (dir < 0 ? minX * scale - 1 : maxX * scale + 1) + dir * 5.6, z = stageBack + 3.4, yaw = dir * 0.56;
+        const group = new T.Group(); group.position.set(x, 0, z); group.rotation.y = yaw;
+        const face = new T.Mesh(imagGeo, imagMat); face.position.set(0, imagBase + imagH / 2, .16);
+        const housing = new T.Mesh(new T.BoxGeometry(imagW + .3, imagH + .3, .3), imagTowerMat); housing.position.set(0, imagBase + imagH / 2, 0);
+        const tower = new T.Mesh(new T.BoxGeometry(.32, imagBase, .32), imagTowerMat); tower.position.set(0, imagBase / 2, -.1);
+        group.add(housing, face, tower); scene.add(group);
+      }
 
       // Concert rig: two box trusses, cross braces and freestanding towers.
       function tube(a, b, radius=.065) {
@@ -609,14 +677,15 @@ window.ArenaSeatView = (function () {
       const hideMatrix=new T.Object3D();hideMatrix.scale.set(0,0,0);hideMatrix.updateMatrix();
       function lowAt(t,hide){
         matrix.position.set(tablePositions[t].x,TOP_Y,tablePositions[t].z);matrix.rotation.set(0,tableYaw(t),0);matrix.updateMatrix();
-        for(const mesh of lowSet){mesh.setMatrixAt(t,hide?hideMatrix.matrix:matrix.matrix);mesh.instanceMatrix.needsUpdate=true;}
+        // Границите се смятат наново: иначе след смяна на масата мрежата би се отсякла по старите.
+        for(const mesh of lowSet){mesh.setMatrixAt(t,hide?hideMatrix.matrix:matrix.matrix);mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();}
       }
       function setDrinkOwn(t){
         if(t===drinkOwn)return;
         if(drinkOwn>=0)lowAt(drinkOwn,false);
         drinkOwn=t;
         matrix.position.set(t>=0?tablePositions[t].x:0,TOP_Y,t>=0?tablePositions[t].z:0);matrix.rotation.set(0,t>=0?tableYaw(t):0,0);matrix.updateMatrix();
-        for(const mesh of highSet){mesh.visible=t>=0;if(t>=0){mesh.setMatrixAt(0,matrix.matrix);mesh.instanceMatrix.needsUpdate=true;}}
+        for(const mesh of highSet){mesh.visible=t>=0;if(t>=0){mesh.setMatrixAt(0,matrix.matrix);mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();}}
         if(t>=0)lowAt(t,true);
       }
       setDrinkOwn(-1);

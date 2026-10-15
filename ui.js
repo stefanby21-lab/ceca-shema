@@ -229,6 +229,10 @@
     if(recommendation) recommendation.textContent=e&&e.length?'Препоръчайте ми други места':'Препоръчайте ми места';
     var i = document.getElementById("picklist");
     if (!i) return;
+    // Списъкът се строи наново при всяка промяна. Ако фокусът е бил на стъпката за
+    // правостоящи (- / +), същият бутон го получава обратно: с клавиатурата човек
+    // натиска „+" три пъти подред, без да се връща с Tab.
+    var focusAct = document.activeElement && document.activeElement.closest && document.activeElement.closest("#picklist") && document.activeElement.dataset ? document.activeElement.dataset.act : null;
     ((n = n || {}), (i.textContent = ""));
     var a = t("div", "pk-head");
     a.appendChild(t("h2", "block-title", "Избрано"));
@@ -279,12 +283,15 @@
           pl = t("button", "pk-step__b", "+");
         ((mi.type = "button"),
           (pl.type = "button"),
+          (mi.dataset.act = "minus"),
+          (pl.dataset.act = "plus"),
           mi.setAttribute("aria-label", "Един билет по-малко"),
           pl.setAttribute("aria-label", "Един билет повече"),
           va.setAttribute("aria-live", "polite"),
-          // На минимума „-" е изключено: махането е хиксът. На максимума „+"
-          // остава натискаемо, за да обясни лимита, вместо да мълчи.
-          (mi.disabled = l.qty <= 1),
+          // На минимума „-" е само aria-disabled (махането е хиксът), за да не губи
+          // клавиатурата фокуса и повторното Enter да не превключи на „+". На
+          // максимума „+" също остава натискаемо и обяснява лимита.
+          mi.setAttribute("aria-disabled", String(l.qty <= 1)),
           pl.setAttribute("aria-disabled", String(l.qty >= l.max)),
           mi.addEventListener("click", function () {
             typeof n.onQuantity == "function" && n.onQuantity(l.mk, l.qty - 1);
@@ -360,6 +367,11 @@
         pkRo && (pkRo.disconnect(), pkRo.observe(o)));
     } else pkRo && pkRo.disconnect();
     pkN = e.length;
+    if (focusAct) {
+      var fb = i.querySelector('[data-act="' + focusAct + '"]');
+      fb || (fb = i.querySelector('[data-act="plus"]'));
+      fb && fb.focus({ preventScroll: true });
+    }
   }
   function xe(e, n) {
     ((I = e || null), (J = n || null), N && U(N, H), I && le());

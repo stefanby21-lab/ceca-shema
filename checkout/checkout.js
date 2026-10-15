@@ -33,6 +33,11 @@
   const home = document.querySelector("[data-arena-home]");
   if (home && localDemo) home.href = "../../prototype/";
 
+  function demoSeat() {
+    const seat = (((window.VENUE || {}).seats || {}).features || []).find((f) => f.properties.sold !== true && f.properties.offsale !== true && f.properties.eur > 0);
+    return seat ? seat.properties.mk : "";
+  }
+
   function demoCart() {
     return {
       version: 1,
@@ -44,18 +49,8 @@
         venue: "Зала „Арена 8888 София“",
         organizer: "C'est La Vie Restaurant & Club",
       },
-      items: [
-        {
-          id: "demo:C.1.4:12:8",
-          type: "seat",
-          sector: "Сектор C.1.4",
-          row: "12",
-          seat: "8",
-          quantity: 1,
-          unitPrice: 50,
-          lineTotal: 50,
-        },
-      ],
+      // Само самоличността на мястото: цената и етикетите се смятат от залата.
+      items: [{ id: demoSeat(), type: "seat", quantity: 1 }],
       currency: "EUR",
       ticketCount: 1,
       subtotal: 50,
@@ -83,19 +78,61 @@
     write(CART_KEY, cart);
   }
 
-  // Правостоящите са най-много един ред и само зоната, която залата познава:
-  // иначе количка с чужд mk би минала като „билети".
-  function standingValid(items) {
-    const rows = items.filter((item) => item && item.type === "standing");
-    if (!rows.length) return true;
-    const zones = (window.VENUE && window.VENUE.standing && window.VENUE.standing.features) || [];
-    return rows.length === 1 && zones.some((f) => f.properties.mk === rows[0].mk && f.properties.offsale !== true);
+  // Количката от схемата е само списък от самоличности и бройки. Цените, етикетите
+  // и броят места се смятат ОТНОВО от данните на залата (VENUE), в цели центове:
+  // така подправена количка (ниска цена, 1e308, отрицателна цена, маса с бройка 1,
+  // чужд номер) не може да намали сметката или да мине като билети. Връща чиста
+  // количка или null; null показва обичайното празно състояние.
+  const MAX_ADMISSIONS = 10;
+  function canonicalCart(raw) {
+    const venue = window.VENUE;
+    if (!raw || !Array.isArray(raw.items) || !raw.items.length || raw.items.length > MAX_ADMISSIONS || !venue) return null;
+    const seats = new Map((((venue.seats || {}).features) || []).map((f) => [f.properties.mk, f.properties]));
+    const tables = new Map((((venue.tables || {}).features) || []).map((f) => [f.properties.mk, f.properties]));
+    const zones = new Map((((venue.standing || {}).features) || []).map((f) => [f.properties.mk, f.properties]));
+    const sections = new Map((((venue.sections || {}).features) || []).map((f) => [String(f.properties.mk).replace(/^s:/, ""), f.properties]));
+    const sectorLabel = (token) => {
+      const name = String((sections.get(String(token)) || {}).name || token);
+      return /^(Сектор|Блок|Ложа|Оркестрина)(\s|$)/i.test(name) ? name : "Сектор " + name;
+    };
+    const free = (r) => r && r.sold !== true && r.offsale !== true && Number.isFinite(r.eur) && r.eur > 0;
+    const toCents = (euro) => Math.round(euro * 100);
+    const seen = new Set(), items = [];
+    let admissions = 0, standingRows = 0, totalCents = 0;
+    for (const item of raw.items) {
+      if (!item || typeof item !== "object" || typeof item.type !== "string") return null;
+      const id = item.type === "standing" ? (item.mk || item.id) : item.id;
+      if (typeof id !== "string") return null;
+      const key = item.type + "|" + id;
+      if (seen.has(key)) return null;
+      seen.add(key);
+      let line, count;
+      if (item.type === "seat") {
+        const r = seats.get(id);
+        if (!free(r) || item.quantity !== 1) return null;
+        count = 1;
+        line = { id, type: "seat", sector: sectorLabel(r.s), sectionToken: r.s, row: String(r.r == null ? "" : r.r), seat: String(r.t == null ? "" : r.t),
+          quantity: 1, cents: toCents(r.eur) };
+      } else if (item.type === "table") {
+        const r = tables.get(id);
+        count = Number(r && r.seats) > 0 ? Number(r.seats) : TABLE_SEATS_FALLBACK;
+        if (!free(r) || item.quantity !== count) return null;
+        line = { id, type: "table", sector: r.name || "Маси", sectionToken: "tables", row: "", seat: "цяла маса", quantity: count, cents: toCents(r.eur) };
+      } else if (item.type === "standing") {
+        const r = zones.get(id);
+        const capacity = Number(r && r.capacity) > 0 ? Number(r.capacity) : MAX_ADMISSIONS;
+        if (!free(r) || ++standingRows > 1 || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > Math.min(MAX_ADMISSIONS, capacity)) return null;
+        count = item.quantity;
+        line = { id, type: "standing", mk: id, name: r.name, sector: r.name, sectionToken: "standing", row: "", seat: "", quantity: count, cents: toCents(r.eur) * count };
+      } else return null;
+      admissions += count;
+      if (admissions > MAX_ADMISSIONS) return null;
+      totalCents += line.cents;
+      items.push(Object.assign(line, { unitPrice: line.cents / 100 / count, lineTotal: line.cents / 100 }));
+    }
+    return { version: 1, items, currency: "EUR", ticketCount: admissions, subtotal: totalCents / 100, createdAt: raw.createdAt };
   }
-  if (cart && Array.isArray(cart.items) && !standingValid(cart.items)) cart = null;
-  if (cart && (!Array.isArray(cart.items) || !cart.items.length || cart.items.length>10 || cart.items.reduce((sum,item)=>sum+Number(item?.quantity || 0),0)>10 || cart.items.some(item=>
-    !item || !['seat','table','standing'].includes(item.type) || !Number.isFinite(item.lineTotal) || item.lineTotal<=0 ||
-    !Number.isInteger(item.quantity) || item.quantity<1 || item.quantity>10
-  ))) cart=null;
+  cart = canonicalCart(cart);
 
   const stored = read(FLOW_KEY) || {};
   let state = {

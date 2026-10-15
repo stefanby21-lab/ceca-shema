@@ -546,6 +546,23 @@ window.SeatMap = (function () {
     }
     return (out.push(out[0]), [out]);
   }
+  // Потъмняване на цвят - за полата под плота (същото като в 3а).
+  function dk(hex, k) {
+    const h = String(hex || "").replace("#", "");
+    if (h.length !== 6) return hex || "#c9a227";
+    const n = parseInt(h, 16);
+    if (!isFinite(n)) return hex;
+    return (
+      "#" +
+      [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+        .map(function (v) {
+          return Math.max(0, Math.min(255, Math.round(v * k)))
+            .toString(16)
+            .padStart(2, "0");
+        })
+        .join("")
+    );
+  }
   // Външният ръб на масата (столчетата) спрямо радиуса на плота.
   const hx = 1.46;
   // Ъгълът на всяко бар столче от посоката „на юг" (към зрителите), в радиани.
@@ -591,7 +608,8 @@ window.SeatMap = (function () {
     let foot = 1 / 0;
     if (isFinite(pitch)) foot = Math.min(foot, pitch * 0.39);
     if (isFinite(stMin)) foot = Math.min(foot, stMin - O * 1.15);
-    const H = O * 0.62,
+    // Масите са тънки и високи (1.3 пъти спрямо 3а), както столовете-щъркели.
+    const H = O * 0.62 * 1.3,
       out = [];
     src.forEach(function (f) {
       const c = f.geometry.coordinates,
@@ -600,9 +618,10 @@ window.SeatMap = (function () {
         r = isFinite(foot) && foot > 0 ? Math.min(r0, foot / hx) : r0,
         sold = p.sold === !0,
         col = p.color || "#c9a227";
-      // Мат черен метал: това са коктейлни маси без покривка и без нищо отгоре.
-      // Плотът е ЕДИН плътен диск в цвета на ценовата категория (както преди);
-      // продадените са сиви, за да не се бъркат със свободните.
+      // Коктейлни маси: тънка черна колона и малко плоско ходило, а отгоре
+      // старият двуцветен вид от 3а - плот в цвета на ценовата категория и
+      // под него къса пола в по-тъмен нюанс на същия цвят. Без вази и цветя.
+      // Продадените са сиви в два нюанса, за да не се бъркат със свободните.
       const METAL = "#2A2F37",
         METAL_DARK = "#1D2128",
         GREY = "#B9C1CC",
@@ -648,10 +667,11 @@ window.SeatMap = (function () {
         part("chair", sqRing(sx, sy, hs - lg, hs - lg * 2.2), H * 0.31, H * 0.33, cl);
         part("chair", sq(sx, sy, hs), H * 0.77, H * 0.8, cl);
       }
-      // Маса: ниска основа, тънка колона и плътният цветен плот.
-      part("base", Un(c[0], c[1], r * 0.5, 20), 0, H * 0.05, sold ? GREY_DARK : METAL_DARK);
-      part("column", Un(c[0], c[1], r * 0.09, 10), H * 0.05, H * 0.86, sold ? GREY_DARK : METAL_DARK);
-      part("top", Un(c[0], c[1], r, 28), H * 0.86, H, sold ? Ge : col);
+      // Маса: ниско ходило (r*0.32), много тънка колона (r*0.06), пола и плот.
+      part("base", Un(c[0], c[1], r * 0.32, 20), 0, H * 0.03, sold ? GREY_DARK : METAL_DARK);
+      part("column", Un(c[0], c[1], r * 0.06, 10), H * 0.03, H * 0.82, sold ? GREY_DARK : METAL_DARK);
+      part("apron", Un(c[0], c[1], r * 0.92, 28), H * 0.82, H * 0.96, sold ? GREY_DARK : dk(col, 0.78));
+      part("top", Un(c[0], c[1], r, 28), H * 0.96, H, sold ? Ge : col);
     });
     // Радиусът на хит-зоната: колкото масата, но не по-малко от половин стъпка.
     tp = isFinite(foot) && foot > 0 ? Math.max(foot, isFinite(pitch) ? pitch * 0.42 : foot) : O * 1.1;
@@ -1688,9 +1708,9 @@ window.SeatMap = (function () {
             "fill-extrusion-color": [
               "case",
               ["boolean", ["feature-state", "selected"], !1],
-              // Избраната маса: плотът става син, металът остава черен - личи
-              // отгоре, без да се губи видът на масата.
-              ["match", ["get", "part"], "top", Ae, ["coalesce", ["get", "color"], "#c9a227"]],
+              // Избраната маса: плотът и полата стават сини (светъл над тъмен),
+              // металът остава черен.
+              ["match", ["get", "part"], "top", Ae, "apron", "#0F2D68", ["coalesce", ["get", "color"], "#c9a227"]],
               ["coalesce", ["get", "color"], "#c9a227"],
             ],
             // Същият прелив и при масите: „Друга маса" сменя две наведнъж.
@@ -2000,7 +2020,9 @@ window.SeatMap = (function () {
           ((Qt2 = n), Kq2 || (Kq2 = requestAnimationFrame(Xq2)));
         }),
         i.on("mouseout", function () {
-          (e(), stHover([-1e5, -1e5]), (i.getCanvas().style.cursor = ""));
+          // Чакащият кадър се отменя и опашката се чисти: иначе той би върнал
+          // hover след като мишката вече е излязла от картата.
+          (Kq2 && cancelAnimationFrame(Kq2), (Kq2 = 0), (Qt2 = null), e(), stHover([-1e5, -1e5]), (i.getCanvas().style.cursor = ""));
         })),
       (Xq2 = function () {
         Kq2 = 0;
@@ -2023,6 +2045,19 @@ window.SeatMap = (function () {
         }
       }),
       i.on("click", function (n) {
+        // Масите са високи: видимият плот е изместен спрямо мястото си на пода и
+        // кръгът за хит-тест (tables-hit) или местата зад него го прихващаха
+        // вместо него. Затова първо се пита самото 3D тяло на масата - това, което
+        // човек вижда под пръста си.
+        if (i.getLayer("tables-3d")) {
+          const t3 = (i.queryRenderedFeatures(n.point, { layers: ["tables-3d"] }) || []).filter(function (f) {
+            return (f.properties || {}).sold !== !0 && (f.properties || {}).mk;
+          });
+          if (t3.length) {
+            Ne() || Bz2 ? Jn(t3[0].properties.mk) : (qn2(), Ft2());
+            return;
+          }
+        }
         const hs = Rl(n.point);
         // Продаденото място отпада още в хит-теста, тоест натискането му
         // потъваше без следа - човек го чука пак и пак. Тук се хваща отделно,

@@ -174,37 +174,8 @@ test('"other seats" and the recommendation replace standing, like they replace t
   assert.equal(state.rows.length, 2);
 });
 
-// --- чекаут: същият checkout.js върху фалшив DOM ---
-function checkout(cart, venue = true) {
-  const html = {};
-  const element = (id) => new Proxy(function () {}, {
-    get(target, key) {
-      if (key === 'innerHTML') return html[id] || '';
-      if (key === 'classList') return { toggle() {}, add() {}, remove() {} };
-      if (key === 'style' || key === 'dataset') return {};
-      if (key === 'querySelector') return () => element('child');
-      if (key === 'querySelectorAll') return () => [];
-      if (typeof key === 'symbol') return undefined;
-      return target[key] || (() => {});
-    },
-    set(target, key, value) { if (key === 'innerHTML') html[id] = value; else target[key] = value; return true; },
-  });
-  const storage = new Map([['arena8888.checkout.cart.v1', JSON.stringify(cart)]]);
-  const context = { console, setTimeout, clearTimeout, URLSearchParams, Intl, Number, Math, matchMedia: () => ({ matches: true }),
-    location: { hostname: 'test', search: '' },
-    sessionStorage: { getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, v), removeItem: k => storage.delete(k) },
-    requestAnimationFrame: fn => fn(),
-    document: { getElementById: id => element(id), querySelector: () => null, querySelectorAll: () => [], addEventListener() {}, body: element('body'), activeElement: null },
-  };
-  context.window = context;
-  context.window.addEventListener = () => {};
-  vm.createContext(context);
-  if (venue) vm.runInContext(read('venue-data-ceca.js'), context);
-  vm.runInContext(read('checkout/checkout.js'), context);
-  return { html, storage };
-}
-const standingCart = (quantity, extra = {}) => ({ version: 1, ticketCount: quantity, subtotal: quantity * 50, currency: 'EUR',
-  items: [Object.assign({ id: MK, type: 'standing', mk: MK, name: 'Правостоящи', sector: 'Правостоящи', quantity, eur: 50, eurAll: 51.02, unitPrice: 50, lineTotal: quantity * 50 }, extra)] });
+const { checkout } = require('./checkout-harness.cjs');
+const standingCart = (quantity, extra = {}) => ({ items: [Object.assign({ id: MK, type: 'standing', mk: MK, quantity }, extra)] });
 
 test('checkout accepts a standing item: summary line, ticket count and total', () => {
   const { html } = checkout(standingCart(3));

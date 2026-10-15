@@ -4058,7 +4058,8 @@ button {
   fill: url(#standing-hatch); stroke: #153D8A; stroke-width: 1.6px; stroke-dasharray: 8 5; vector-effect: non-scaling-stroke;
 }
 /* Надписът на чертежа („Правостоящи / Standing") се заменя от балона с цената. */
-.svg-hall#ceca-plan-svg [data-kind="standing"] text { display: none; }
+/* Само оригиналния надпис: балонът също е [data-kind="standing"] и носи свой текст. */
+.svg-hall#ceca-plan-svg [data-kind="standing"]:not(.svg-standing-pin) text { display: none; }
 .svg-hall#ceca-plan-svg [data-kind="standing"]:hover .standing { fill: url(#standing-hatch-hover); }
 .svg-hall#ceca-plan-svg [data-kind="standing"].is-selected .standing,
 .svg-hall#ceca-plan-svg [data-kind="standing"].is-selected:hover .standing {
