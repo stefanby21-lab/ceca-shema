@@ -6,7 +6,7 @@ window.SeatMap = (function () {
   const BLUE = '#153D8A', GRAY = '#C3CAD5';
   // Местата на маса идват от данните (свойството seats); 6 е само резервата.
   const TABLE_SEATS_FALLBACK = 6;
-  let venue, options, host, svg, numbers, caption, tip, camera, homeCamera, active = null, standingPin = null, standingBox = null;
+  let venue, options, host, svg, numbers, caption, tip, camera, homeCamera, active = null, standingPin = null, standingBox = null, standingOpening = 0;
   let stateDirty = true;
   const nodes = new Map(), positions = new Map();
   let selected = new Set(), selectedTables = new Set(), suggested = new Set(), highlighted = null, selectedStanding = false;
@@ -138,11 +138,28 @@ window.SeatMap = (function () {
     standingPin.classList.toggle('is-off', !available(p));
     standingPin.setAttribute('aria-label', zoneLabel(p));
   }
+  let pinCompact = false;
+  function setPinCompact(on) {
+    if (on === pinCompact || !standingPin) return;
+    pinCompact = on;
+    standingPin.classList.toggle('is-compact', on);
+    const plate = standingPin.querySelector('.pin-plate'), price = standingPin.querySelector('.pin-price');
+    const name = standingPin.querySelector('.pin-name');
+    if (on) { plate.setAttribute('x', -36); plate.setAttribute('y', -18); plate.setAttribute('width', 72); plate.setAttribute('height', 36); price.setAttribute('y', 10); name.setAttribute('y', -5); }
+    else { plate.setAttribute('x', -50); plate.setAttribute('y', -21); plate.setAttribute('width', 100); plate.setAttribute('height', 42); price.setAttribute('y', 12); name.setAttribute('y', -4); }
+  }
   function placePin() {
     if (!standingPin || !host.clientWidth) return;
+    const [x, y] = positions.get(standingPin.dataset.key), upp = camera.w / host.clientWidth;
     // На телефон балонът е по-малък: зоната там е към 150 px широка.
-    const [x, y] = positions.get(standingPin.dataset.key), k = camera.w / host.clientWidth * (host.clientWidth < 500 ? .82 : 1);
-    standingPin.setAttribute('transform', 'translate(' + x + ' ' + y + ') scale(' + k + ')');
+    const base = host.clientWidth < 500 ? .82 : 1, openPx = standingOpening / upp;
+    // Балонът стои в отвора на квадрата от думи. Когато отворът (в px) е по-малък от
+    // целия балон, остава само малка плочка с цената, смалена така, че да не докосва
+    // думите (общият изглед на 320 px); приближи ли се, балонът става пълен.
+    let k = base;
+    if (openPx && openPx < 100 * base + 16) { setPinCompact(true); k = Math.max(.4, Math.min(1, (openPx - 22) / 72)); }
+    else setPinCompact(false);
+    standingPin.setAttribute('transform', 'translate(' + x + ' ' + y + ') scale(' + upp * k + ')');
   }
   function within([x, y]) { return x >= camera.x && x <= camera.x + camera.w && y >= camera.y && y <= camera.y + camera.h; }
   function render() {
@@ -346,12 +363,13 @@ window.SeatMap = (function () {
     }
     svg.insertBefore(defs, svg.firstChild);
     const zone = Array.from(zones.values())[0];
-    // ПРАВОСТОЯЩИ по пода на зоната: един размер за всички страни (север 180, юг 0,
-    // запад 90, изток 270), с основата към ръба. По късите страни - една дума
-    // (~85%), по дългите - две копия с разстояние от две букви, ъглите са свободни.
-    // Естествено разстояние между буквите; само украса: aria-hidden, зад балона.
+    // ПРАВОСТОЯЩИ по пода на зоната: четирите думи са страните на ЕДИН КВАДРАТ в
+    // средата (север 180, юг 0, запад 90, изток 270), всяка с основата навън, за да
+    // се чете право отвън, гледайки навътре. Страна S = L + 2c + пролука, ~74% от
+    // късата страна. Естествено разстояние между буквите; само украса (aria-hidden),
+    // зад балона. Балонът с цената стои в отвора на квадрата.
     if (zone && standingBox && nodes.has(zone.properties.mk)) {
-      const WORD = 'ПРАВОСТОЯЩИ', TRACK = .06, MARGIN = 14, CORNER = 10, CAP = .72;
+      const WORD = 'ПРАВОСТОЯЩИ', TRACK = .06, CAP = .72, SQUARE = .74, GAP = .3;
       const floor = element('g', { class: 'svg-standing-floor', 'aria-hidden': 'true' });
       const zoneNode = nodes.get(zone.properties.mk);
       zoneNode.parentNode.insertBefore(floor, zoneNode.nextSibling);
@@ -362,16 +380,35 @@ window.SeatMap = (function () {
       try { wordEm = probe.getComputedTextLength() / 100 || wordEm; } catch (_) {}
       probe.remove();
       const b = standingBox, cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-      const gapEm = 2 * wordEm / WORD.length;
-      const byShort = .85 * b.h / wordEm;
-      const byLong = (b.w - 2 * (MARGIN + CORNER)) / (2 * wordEm + gapEm + 2 * CAP);
-      const em = Math.min(byShort, byLong), word = wordEm * em, gap = gapEm * em;
-      const off = MARGIN + CAP * em / 2, shift = word / 2 + gap / 2;
+      const S = SQUARE * Math.min(b.w, b.h), c = S / (wordEm / CAP + 2 + GAP), em = c / CAP, d = S / 2 - c / 2;
+      standingOpening = S - 2 * c; // свободният отвор за балона, в единици на чертежа
       const put = (x, y, rot) => floor.append(element('text', { class: 'floor-word', transform: 'translate(' + x + ' ' + y + ') rotate(' + rot + ')',
-        x: 0, y: CAP * em / 2, 'text-anchor': 'middle', 'font-size': em, 'letter-spacing': TRACK * em }, WORD));
-      put(cx - shift, b.y + off, 180); put(cx + shift, b.y + off, 180);
-      put(cx - shift, b.y + b.h - off, 0); put(cx + shift, b.y + b.h - off, 0);
-      put(b.x + off, cy, 90); put(b.x + b.w - off, cy, -90);
+        x: 0, y: c / 2, 'text-anchor': 'middle', 'font-size': em, 'letter-spacing': TRACK * em }, WORD));
+      put(cx, cy - d, 180); put(cx, cy + d, 0); put(cx - d, cy, 90); put(cx + d, cy, -90);
+      // Парапет вместо пунктира: плътна тънка линия по контура със засечки на всеки
+      // панел и входове от 3 м (два при задния ръб, по един в средата на лявата и
+      // дясната страна). Мащабът е от картата: 1 единица на картата = 3 м.
+      const unit = b.h / 8.3 / 3, panel = 2.25 * unit, entry = 3 * unit; // единици на чертежа на метър
+      const fence = element('g', { class: 'svg-standing-fence', 'aria-hidden': 'true' });
+      let path = '';
+      const run = (from, to, gaps, horizontal, fixed) => {
+        const cuts = [from, ...gaps.flatMap((g) => [g - entry / 2, g + entry / 2]), to];
+        for (let k = 0; k < cuts.length; k += 2) {
+          const lo = cuts[k], hi = cuts[k + 1], n = Math.max(0, Math.floor((hi - lo) / panel));
+          if (!n) continue;
+          path += horizontal ? 'M' + lo + ' ' + fixed + 'H' + hi : 'M' + fixed + ' ' + lo + 'V' + hi;
+          for (let q = 0; q <= n; q++) {
+            const t = lo + (hi - lo) / n * q;
+            path += horizontal ? 'M' + t + ' ' + (fixed - 7) + 'v14' : 'M' + (fixed - 7) + ' ' + t + 'h14';
+          }
+        }
+      };
+      run(b.x, b.x + b.w, [], true, b.y);
+      run(b.x, b.x + b.w, [b.x + 6 * unit, b.x + b.w - 6 * unit], true, b.y + b.h);
+      run(b.y, b.y + b.h, [cy], false, b.x);
+      run(b.y, b.y + b.h, [cy], false, b.x + b.w);
+      fence.append(element('path', { d: path }));
+      floor.after(fence);
     }
     if (zone && nodes.has(zone.properties.mk)) {
       standingPin = buildPin(zone.properties);

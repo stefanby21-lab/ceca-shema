@@ -4054,18 +4054,22 @@ button {
 /* Зоната за правостоящи: щриховано синьо като на WebGL картата. Правилата са
    тук, а не в генерирания чертеж: шаблоните (#standing-hatch*) се създават от
    map-svg.js, а чертежът остава чист SVG на админа. */
+/* Контурът е парапет (виж .svg-standing-fence), не пунктир: самата зона няма линия, освен
+   при избор и при клавиатурен фокус. */
 .svg-hall#ceca-plan-svg [data-kind="standing"] .standing {
-  fill: url(#standing-hatch); stroke: #153D8A; stroke-width: 1.6px; stroke-dasharray: 8 5; vector-effect: non-scaling-stroke;
+  fill: url(#standing-hatch); stroke: none; vector-effect: non-scaling-stroke;
 }
+.svg-hall .svg-standing-fence { pointer-events: none; }
+.svg-hall .svg-standing-fence path { fill: none; stroke: #6B7684; stroke-width: 2.2px; vector-effect: non-scaling-stroke; stroke-linecap: square; }
 /* Надписът на чертежа („Правостоящи / Standing") се заменя от балона с цената. */
 /* Само оригиналния надпис: балонът също е [data-kind="standing"] и носи свой текст. */
 .svg-hall#ceca-plan-svg [data-kind="standing"]:not(.svg-standing-pin) text { display: none; }
 .svg-hall#ceca-plan-svg [data-kind="standing"]:hover .standing { fill: url(#standing-hatch-hover); }
 .svg-hall#ceca-plan-svg [data-kind="standing"].is-selected .standing,
 .svg-hall#ceca-plan-svg [data-kind="standing"].is-selected:hover .standing {
-  fill: url(#standing-hatch-selected); stroke-width: 3px; stroke-dasharray: none;
+  fill: url(#standing-hatch-selected); stroke: #153D8A; stroke-width: 3px;
 }
-.svg-hall#ceca-plan-svg [data-kind="standing"].is-off .standing { fill: url(#standing-hatch-off); stroke: #AEB6C2; }
+.svg-hall#ceca-plan-svg [data-kind="standing"].is-off .standing { fill: url(#standing-hatch-off); }
 .svg-hall#ceca-plan-svg [data-kind="standing"]:focus-visible .standing {
   stroke: #0B1B3A; stroke-width: 3px; stroke-dasharray: none;
 }
@@ -4079,6 +4083,8 @@ button {
 .svg-hall .svg-standing-pin text { pointer-events: none; text-anchor: middle; font-family: system-ui, sans-serif; }
 .svg-hall .svg-standing-pin .pin-name { font-size: 9.5px; font-weight: 700; fill: #153D8A; }
 .svg-hall .svg-standing-pin .pin-price { font-size: 14px; font-weight: 800; fill: #0B1B3A; }
+.svg-hall .svg-standing-pin.is-compact .pin-name { font-size: 8.5px; }
+.svg-hall .svg-standing-pin.is-compact .pin-price { font-size: 13px; }
 .svg-hall .svg-standing-pin.is-selected .pin-plate { fill: #153D8A; }
 .svg-hall .svg-standing-pin.is-selected text { fill: #fff; }
 .svg-hall .svg-standing-pin.is-off .pin-plate { stroke: #AEB6C2; }

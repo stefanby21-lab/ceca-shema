@@ -384,7 +384,10 @@ def standing_feature(ring):
 
 def label_feature(text, rect, T):
     x, y, w, h = rect
-    return {"type": "Feature", "properties": {"label": text},
+    # size - ширина и дълбочина на правоъгълника в единиците на залата (за 3D
+    # изгледа: бар и FOH се строят по реалния си размер, не по гадания).
+    (ax, ay), (bx, by) = T(x, y), T(x + w, y + h)
+    return {"type": "Feature", "properties": OrderedDict(label=text, size=[round(abs(bx - ax), 4), round(abs(by - ay), 4)]),
             "geometry": {"type": "Point", "coordinates": T(x + w / 2.0, y + h / 2.0)}}
 
 

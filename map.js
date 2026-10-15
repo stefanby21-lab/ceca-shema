@@ -1328,32 +1328,68 @@ window.SeatMap = (function () {
       { padding: { top: 70, bottom: A ? 170 : 110, left: 30, right: 30 + panelPad() }, pitch: 0, bearing: 0, duration: rmo() ? 0 : 900, essential: !0 },
     );
   }
-  // ПРАВОСТОЯЩИ, боядисано на пода: един размер на буквите за всички страни, с
-  // основата към ръба, за да се чете от човек отвън, гледащ навътре (север 180,
-  // юг 0, запад 90, изток 270). По късите страни - една дума (~80% от страната),
-  // по дългите - две копия с разстояние от две букви, ъглите остават свободни.
-  // Буквите лежат плоско по картата.
-  const ST_EM = 0.8, // височина на шрифта в единиците на картата
-    ST_WORD = 8.33, // ширина на думата в em (Noto Sans Regular, разстояние между буквите 0.06 em)
-    ST_TRACK = 0.06;
-  function stWords() {
+  // ПРАВОСТОЯЩИ, боядисано на пода: четирите думи са четирите страни на ЕДИН КВАДРАТ
+  // в средата на зоната (север 180, юг 0, запад 90, изток 270), всяка с основата
+  // навън, за да се чете право от човек отвън, гледащ навътре. Страната на квадрата
+  // S = L + 2c + пролука (L - ширина на думата при височина на главните букви c),
+  // ~74% от късата страна на зоната. Буквите лежат плоско по картата.
+  const ST_CAP = 0.72, // височина на главните букви в em (Noto Sans)
+    ST_WORD = 8.33, // ширина на думата в em (разстояние между буквите 0.06 em)
+    ST_TRACK = 0.06,
+    ST_SQUARE = 0.74, // страната на квадрата спрямо късата страна на зоната
+    ST_GAP = 0.3; // пролуката в ъглите, в единици от c
+  function stGeom() {
     const f = l.standing && l.standing.features && l.standing.features[0];
-    if (!f) return { type: "FeatureCollection", features: [] };
+    if (!f) return null;
     const xs = f.geometry.coordinates[0].map(function (pt) { return pt[0]; }),
       ys = f.geometry.coordinates[0].map(function (pt) { return pt[1]; }),
       x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs),
       y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys),
-      cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, off = 0.2 + ST_EM * 0.45,
-      // Средата на всяко от двете копия: половин дума и половин разстояние от две букви.
-      shift = (ST_WORD * ST_EM) / 2 + (ST_WORD / 11) * ST_EM,
-      mk = function (x, y, rot) {
-        return { type: "Feature", geometry: { type: "Point", coordinates: [x, y] }, properties: { rot: rot } };
-      };
+      S = ST_SQUARE * Math.min(x1 - x0, y1 - y0),
+      c = S / (ST_WORD / ST_CAP + 2 + ST_GAP);
+    return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, S: S, c: c, em: c / ST_CAP, d: S / 2 - c / 2, x0: x0, x1: x1, y0: y0, y1: y1 };
+  }
+  function stWords() {
+    const g = stGeom();
+    if (!g) return { type: "FeatureCollection", features: [] };
+    const mk = function (x, y, rot) {
+      return { type: "Feature", geometry: { type: "Point", coordinates: [x, y] }, properties: { rot: rot } };
+    };
     return {
       type: "FeatureCollection",
-      features: [mk(cx - shift, y1 - off, 180), mk(cx + shift, y1 - off, 180), mk(cx - shift, y0 + off, 0), mk(cx + shift, y0 + off, 0),
-        mk(x0 + off, cy, 90), mk(x1 - off, cy, 270)],
+      features: [mk(g.cx, g.cy + g.d, 180), mk(g.cx, g.cy - g.d, 0), mk(g.cx - g.d, g.cy, 90), mk(g.cx + g.d, g.cy, 270)],
     };
+  }
+  // ---- БАРОВЕ И FOH на картата (един малък блок: изтрива се наведнъж) ----
+  // Ниски тъмни паралелепипеди по правоъгълниците от плана (центърът и size от
+  // objectLabels). Слоят не е в нито един хит-тест, така че не краде докосвания
+  // от зоната или масите; надписите са от слоя object-labels.
+  function barFohLayer() {
+    const src = ((l.objectLabels && l.objectLabels.features) || []).filter(function (f) {
+      return f.properties && (f.properties.label === "BAR" || f.properties.label === "FOH") && f.properties.size;
+    });
+    if (!src.length) return;
+    const hh = O * 0.62 * 1.3 * 0.9,
+      feats = src.map(function (f) {
+        const c = f.geometry.coordinates, w = f.properties.size[0] / 2, d = f.properties.size[1] / 2;
+        return {
+          type: "Feature", properties: { part: f.properties.label, height: hh },
+          geometry: { type: "Polygon", coordinates: [[[c[0] - w, c[1] - d], [c[0] + w, c[1] - d], [c[0] + w, c[1] + d], [c[0] - w, c[1] + d], [c[0] - w, c[1] - d]]] },
+        };
+      });
+    i.addSource("barFoh", { type: "geojson", data: { type: "FeatureCollection", features: feats } });
+    i.addLayer({
+      id: "bar-foh-3d",
+      type: "fill-extrusion",
+      source: "barFoh",
+      paint: {
+        "fill-extrusion-color": ["match", ["get", "part"], "BAR", "#4A515C", "#3B414B"],
+        "fill-extrusion-base": 0,
+        "fill-extrusion-height": ["*", ["get", "height"], ue],
+        "fill-extrusion-opacity": 1,
+        "fill-extrusion-vertical-gradient": !0,
+      },
+    });
   }
   function stLayers() {
     if (!l.standing || !l.standing.features || !l.standing.features.length) return;
@@ -1395,15 +1431,65 @@ window.SeatMap = (function () {
       source: "standing",
       paint: { "line-color": Ae, "line-width": 3, "line-opacity": ["case", sel, 1, 0] },
     });
+    // Парапети около зоната: тънка горна греда и стълбове на всеки панел (2.2 м),
+    // 0.9 от височината на масите, неутрален метален цвят; входове от 3 м (два при
+    // задния ръб, по един в средата на лявата и дясната страна; към сцената - без).
+    // Слоят е fill-extrusion и не е в нито един списък за хит-тест, така че не краде
+    // докосвания от зоната или масите.
+    const fg = stGeom();
+    if (fg) {
+      const U = 1 / 3, PANEL = 2.25 * U, ENTRY = 3 * U, IN = 0.5 * U, HF = O * 0.62 * 1.3 * 0.9, RW = 0.045, PW = 0.06,
+        fx0 = fg.x0 + IN, fx1 = fg.x1 - IN, fy0 = fg.y0 + IN, fy1 = fg.y1 - IN, feats = [],
+        rect = function (ax, ay, bx, by, w, base, top, part) {
+          const hx = ax === bx ? w / 2 : 0, hy = ay === by ? w / 2 : 0,
+            xa = Math.min(ax, bx) - hx, xb = Math.max(ax, bx) + hx, ya = Math.min(ay, by) - hy, yb = Math.max(ay, by) + hy;
+          feats.push({
+            type: "Feature", properties: { part: part, base: base, height: top },
+            geometry: { type: "Polygon", coordinates: [[[xa, ya], [xb, ya], [xb, yb], [xa, yb], [xa, ya]]] },
+          });
+        },
+        post = function (x, y) { rect(x - PW / 2, y - PW / 2, x + PW / 2, y + PW / 2, 0, 0, HF, "post"); },
+        // Страна: отсечките между входовете, греда по тях и стълб на всеки панел.
+        side = function (from, to, gaps, horizontal, fixed) {
+          const cuts = [from].concat(gaps.reduce(function (acc, g) { return acc.concat([g - ENTRY / 2, g + ENTRY / 2]); }, []), [to]);
+          for (let k = 0; k < cuts.length; k += 2) {
+            const a = cuts[k], b = cuts[k + 1], n = Math.max(0, Math.floor((b - a) / PANEL));
+            if (!n) continue;
+            horizontal ? rect(a, fixed, b, fixed, RW, HF * 0.85, HF, "rail") : rect(fixed, a, fixed, b, RW, HF * 0.85, HF, "rail");
+            for (let i = 0; i <= n; i++) {
+              const t = a + ((b - a) / n) * i;
+              horizontal ? post(t, fixed) : post(fixed, t);
+            }
+          }
+        };
+      side(fx0, fx1, [], !0, fy1);
+      side(fx0, fx1, [fx0 + 2, fx1 - 2], !0, fy0);
+      side(fy0, fy1, [(fy0 + fy1) / 2], !1, fx0);
+      side(fy0, fy1, [(fy0 + fy1) / 2], !1, fx1);
+      i.addSource("standingFence", { type: "geojson", data: { type: "FeatureCollection", features: feats } });
+      i.addLayer({
+        id: "standing-fence",
+        type: "fill-extrusion",
+        source: "standingFence",
+        paint: {
+          "fill-extrusion-color": "#9AA3AE",
+          "fill-extrusion-base": ["*", ["get", "base"], ue],
+          "fill-extrusion-height": ["*", ["get", "height"], ue],
+          "fill-extrusion-opacity": 1,
+          "fill-extrusion-vertical-gradient": !0,
+        },
+      });
+    }
     // Думата по четирите страни: под балона с цената и без сблъсъци с него. Има
     // само тънък шрифт, затова тежестта е с дебело светло ореолче върху тъмно:
     // долният слой е тъмният контур, горният - светлите букви.
+    const stg = stGeom();
     i.addSource("standingWords", { type: "geojson", data: stWords() });
     const wordLayout = {
       "text-field": "ПРАВОСТОЯЩИ",
       "text-font": K,
       // Размерът следва мащаба на картата (като геометрия): px = em * 512 * 2^z / 360.
-      "text-size": ["interpolate", ["exponential", 2], ["zoom"], 0, (ST_EM * 512) / 360, 24, ((ST_EM * 512) / 360) * Math.pow(2, 24)],
+      "text-size": ["interpolate", ["exponential", 2], ["zoom"], 0, (stg.em * 512) / 360, 24, ((stg.em * 512) / 360) * Math.pow(2, 24)],
       "text-letter-spacing": ST_TRACK,
       "text-rotate": ["get", "rot"],
       "text-rotation-alignment": "map",
@@ -1565,6 +1651,7 @@ window.SeatMap = (function () {
       });
     }
     stLayers();
+    barFohLayer();
     if (
       (i.addLayer({
         id: "sections-fill",
@@ -1715,7 +1802,11 @@ window.SeatMap = (function () {
             "text-font": K,
             "text-size": 14,
             "text-letter-spacing": 0.05,
-            "text-allow-overlap": !1,
+            // Надписите (СЦЕНА, FOH, BAR) винаги гледат към зрителя, при всяко
+            // завъртане на картата, и не изчезват при струпване.
+            "text-rotation-alignment": "viewport",
+            "text-pitch-alignment": "viewport",
+            "text-allow-overlap": !0,
           },
           paint: { "text-color": "#0B1B3A", "text-halo-color": "#ffffff", "text-halo-width": 1.8 },
         }),

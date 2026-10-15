@@ -117,7 +117,8 @@
       "tier"
     ],
     "objectLabels": [
-      "label"
+      "label",
+      "size"
     ],
     "standing": [
       "capacity",
