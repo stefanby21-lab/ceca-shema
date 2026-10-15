@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Превръща запазена страница от kupibileti.bg във venue данни за схемата.
 
-    python3 tools/kupibileti-to-venue.py "<път>/KUPIBILETI.BG.html" venue-data-arena.js ARENA
+    python3 tools/kupibileti-to-venue.py "<път>/KUPIBILETI.BG.html" venue-data.js ARENA
 
 Как е устроен оригиналът (важи и за НДК, и за Арена 8888):
   <g id="S-B.2.2"><title>B.2.2</title>        сектор
@@ -31,7 +31,7 @@ SOLD_CLASSES = {"color-free", "multiplace", "fil1", "fil5", "fil6"}
 TARGET_PITCH = 0.3703
 FEE = 1.02  # такса за обслужване, както в НДК данните
 UPPER_TIER = {"Арена 8888": ["B.", "204", "205", "206", "207"]}
-EVENTS = {"Арена 8888": "Тони Стораро"}
+EVENTS = {"Арена 8888": "Цеца"}
 
 
 def clean(v):

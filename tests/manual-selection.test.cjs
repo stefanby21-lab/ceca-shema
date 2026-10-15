@@ -18,7 +18,7 @@ function app(saved) {
   };
   context.window = { location: context.location, matchMedia: context.matchMedia, addEventListener: noop, dispatchEvent: noop };
   vm.createContext(context);
-  for (const file of ['venue-data-arena.js','seatfinder.js']) vm.runInContext(fs.readFileSync(path.join(base,file),'utf8'),context);
+  for (const file of ['venue-data-ceca.js','seatfinder.js']) vm.runInContext(fs.readFileSync(path.join(base,file),'utf8'),context);
   const ui = { openGate: options => state.gate=options, renderFilterBar: (_,handlers) => state.filters=handlers,
     showPicks: (picks,handlers) => { state.picks=Array.from(picks,p=>p.mk); state.picksHandlers=handlers; },
     notify: notice => state.notices.push(notice) };
@@ -123,13 +123,40 @@ test('checkout rejects Cyrillic and malformed email addresses, while accepting o
  }
 });
 
-test('a table and two seats survive restoration without exceeding ten tickets',()=>{
+test('a table (6 tickets) and two seats survive restoration without exceeding ten tickets',()=>{
  const first=app(); first.state.gate.onApply({quantity:2});
  const pair=first.state.picks.slice();first.state.picksHandlers.onClearAll();
  const table=first.window.VENUE.tables.features.find(f=>!f.properties.sold && !f.properties.offsale);
  first.state.map.onTableClick(table.properties.mk);first.state.map.onSeatClick(pair[0]);first.window.__onBuy();
  const cart=JSON.parse(first.storage.get('arena8888.checkout.cart.v1'));
- assert.equal(cart.ticketCount,10);
+ assert.equal(cart.ticketCount,8);
+ assert.equal(cart.items.find(item=>item.type==='table').quantity,6);
  const restored=app(cart);assert.equal(restored.state.picks.length,3);
  assert.ok(restored.state.picks.includes(table.properties.mk));
+});
+
+test('a table counts as its six seats: table plus four seats is ten, a fifth seat is rejected',()=>{
+ const {state,window}=app();
+ const table=window.VENUE.tables.features.find(f=>!f.properties.sold && !f.properties.offsale);
+ assert.equal(table.properties.seats,6);
+ state.gate.onApply({quantity:4});
+ assert.equal(state.picks.length,4);
+ state.map.onTableClick(table.properties.mk);
+ assert.equal(state.picks.length,5);
+ assert.ok(state.picks.includes(table.properties.mk));
+ state.filters.onQuantityPick(1);
+ const extra=window.VENUE.seats.features.find(f=>!state.picks.includes(f.properties.mk) && !f.properties.sold && !f.properties.offsale && f.properties.eur>0);
+ state.map.onSeatClick(extra.properties.mk);
+ assert.equal(state.picks.length,5);
+ assert.match(state.notices.at(-1).text,/най-много 10/);
+ assert.match(state.notices.at(-1).text,/6 души/);
+});
+test('a table cannot be added once the order already holds five seats',()=>{
+ const {state,window}=app();
+ state.gate.onApply({quantity:5});
+ const before=state.picks.slice();
+ const table=window.VENUE.tables.features.find(f=>!f.properties.sold && !f.properties.offsale);
+ state.map.onTableClick(table.properties.mk);
+ assert.deepEqual(state.picks,before);
+ assert.match(state.notices.at(-1).text,/най-много 10/);
 });

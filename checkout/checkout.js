@@ -3,6 +3,8 @@
 
   const CART_KEY = "arena8888.checkout.cart.v1";
   const FLOW_KEY = "arena8888.checkout.flow.v2";
+  // Места на маса, ако количеството липсва в количката (в нея го слага схемата от данните).
+  const TABLE_SEATS_FALLBACK = 6;
   const SERVICE_FEE = 160;
   const INTEREST_RATE = 0.05;
   const GUARANTEE_RATE = 0.06;
@@ -35,11 +37,12 @@
     return {
       version: 1,
       event: {
-        id: "100090",
-        title: "ТОНИ СТОРАРО - ЮБИЛЕЕН КОНЦЕРТ",
-        date: "13 ноември 2026",
+        id: "ceca-2026-11-07",
+        title: "CECA",
+        date: "7 ноември 2026",
         time: "20:00",
         venue: "Зала „Арена 8888 София“",
+        organizer: "C'est La Vie Restaurant & Club",
       },
       items: [
         {
@@ -533,15 +536,15 @@
           </section>
           <div class="success-side">
             <section class="success-card success-event-card">
-              <img src="../assets/toni-storaro.webp" alt="" />
-              <div><h3>Тони Стораро - юбилеен концерт</h3><p>▣&nbsp; 13 ноември 2026, петък</p><p>◷&nbsp; 20:00 · ${safe(sectionLabel())}</p></div>
+              <img src="../assets/ceca.webp" alt="" />
+              <div><h3>CECA</h3><p>▣&nbsp; 7 ноември 2026, събота</p><p>◷&nbsp; 20:00 · ${safe(sectionLabel())}</p></div>
             </section>
             <section class="success-card success-next">
               <p class="success-label">Вашият избор</p>
               <div class="success-timeline">
                 <div class="is-done"><i>✓</i><strong>Начин на плащане</strong><span>${safe(METHODS[state.paymentMethod].label)}</span></div>
                 <div class="is-done"><i>✓</i><strong>Билети</strong><span>${ticketCount()} ${ticketCount() === 1 ? "избрано място" : "избрани места"}</span></div>
-                <div><i></i><strong>Дата на концерта</strong><span>13 ноември 2026</span></div>
+                <div><i></i><strong>Дата на концерта</strong><span>7 ноември 2026</span></div>
               </div>
             </section>
           </div>
@@ -585,7 +588,7 @@
   }
 
   function itemSubtitle(item) {
-    if (item.type === "table") return "Цяла маса · " + Math.max(1, Number(item.quantity) || 8) + " места";
+    if (item.type === "table") return "Цяла маса · " + Math.max(1, Number(item.quantity) || TABLE_SEATS_FALLBACK) + " места";
     const details = [];
     if (item.row) details.push("ред " + item.row);
     if (item.seat) details.push("място " + item.seat);

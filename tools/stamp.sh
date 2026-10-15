@@ -1,5 +1,6 @@
 #!/bin/bash
-# Преизчислява отпечатъците „?v=" в index.html от СЪДЪРЖАНИЕТО на файловете.
+# Преизчислява отпечатъците „?v=" в index.html и checkout/index.html от
+# СЪДЪРЖАНИЕТО на файловете.
 #
 # Файловете се кешират завинаги с този отпечатък. Забрави ли се, поправката
 # просто не стига до хората, отваряли схемата преди - изглежда, че нищо не е
@@ -9,17 +10,30 @@
 set -e
 cd "$(dirname "$0")/.."
 changed=0
-for f in startup.js arena-plan-svg.js map-svg.js styles.css venue-data-arena.js arena-geometry.js arena-seatview.js map.js seatview3d.js seatfinder.js ui.js app.js sheet.js; do
-  [ -f "$f" ] || continue
+
+# stamp <html> <файл> - файлът се търси в html по краткото му име (basename),
+# защото checkout/index.html го сочи като "checkout.js" или "../seatfinder.js".
+stamp() {
+  html=$1; f=$2
+  [ -f "$f" ] || return 0
+  name=$(basename "$f")
+  # Точката в името се екранира, за да не мине за произволен знак.
+  esc=$(printf '%s' "$name" | sed 's/\./\\./g')
+  old=$(grep -o "[/\"]$esc?v=[0-9a-f]*" "$html" | head -1 | sed "s|.*$esc?v=||")
+  [ -n "$old" ] || return 0
   new=$(shasum -a 256 "$f" | cut -c1-10)
-  old=$(grep -o "$f?v=[0-9a-f]*" index.html | head -1 | sed "s|$f?v=||")
   if [ "$new" != "$old" ]; then
-    # Точката в името се екранира, за да не мине за произволен знак.
-    esc=$(printf '%s' "$f" | sed 's/\./\\./g')
-    sed -i '' "s|$esc?v=[0-9a-f]*|$f?v=$new|g" index.html
-    echo "  обновен: $f  $old -> $new"
+    sed -i '' "s|\([/\"]\)$esc?v=[0-9a-f]*|\1$name?v=$new|g" "$html"
+    echo "  обновен: $html $f  $old -> $new"
     changed=1
   fi
+}
+
+for f in startup.js ceca-plan-svg.js map-svg.js styles.css venue-data-ceca.js arena-geometry.js arena-seatview.js map.js seatview3d.js seatfinder.js ui.js app.js sheet.js; do
+  stamp index.html "$f"
+done
+for f in checkout/checkout.css checkout/checkout.js venue-data-ceca.js seatfinder.js; do
+  stamp checkout/index.html "$f"
 done
 [ "$changed" = "0" ] && echo "  всички отпечатъци са актуални"
 exit 0

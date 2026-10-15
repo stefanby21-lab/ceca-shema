@@ -28,11 +28,15 @@
     +'<button type="button" class="tier-sheet__ok">Готово</button></div>';
   const railChips=tierWrap.querySelector('.tier-sheet__slot'),
         priceSlot=tierWrap.querySelector('.tier-sheet__price');
-  // Масите са друг продукт: 255-640 € на място срещу 20-75 € за място в
+  // Масите са друг продукт: 150-217 € на място срещу 30-80 € за място в
   // залата. Затова своя стълбица - иначе всяка маса би била еднакво „червена".
   (function tableLegend(){
     const box=tierWrap.querySelector('.tier-sheet__tables'),
-          levels=window.VENUE&&window.VENUE.meta&&window.VENUE.meta.tableLevels;
+          levels=window.VENUE&&window.VENUE.meta&&window.VENUE.meta.tableLevels,
+          // Местата на масата идват от данните; 6 е само резервата, ако ги няма.
+          TABLE_SEATS_FALLBACK=6,
+          firstTable=window.VENUE&&window.VENUE.tables&&window.VENUE.tables.features&&window.VENUE.tables.features[0],
+          tableSeats=Number(firstTable&&firstTable.properties&&firstTable.properties.seats)||TABLE_SEATS_FALLBACK;
     if(!box||!levels||!levels.length)return;
     box.hidden=false;
     // Числото в квадратчето е цялата маса, както в балончето на схемата.
@@ -42,7 +46,7 @@
     const naMqsto=levels.map(l=>Math.round(l.eurPerSeat)).filter(n=>n);
     // Цветовете не са само мостри: всеки води камерата при свободните маси от
     // своята категория, за да не се търси „коя беше червената" по схемата.
-    box.innerHTML='<p class="tier-sheet__head tier-sheet__head--2">Цели маси, 8 места</p><div class="tier-sheet__ramp">'
+    box.innerHTML='<p class="tier-sheet__head tier-sheet__head--2">Цели маси, '+tableSeats+' места</p><div class="tier-sheet__ramp">'
       +levels.map(l=>'<button type="button" data-lvl="'+l.level+'" style="background:'+l.color+'" aria-label="Покажете масите по '+l.label+'"><i>'+l.label+'</i></button>').join('')+'</div>'
       +(naMqsto.length?'<p class="tier-sheet__note">'+Math.min.apply(null,naMqsto)+'-'+Math.max.apply(null,naMqsto)+' € на място</p>':'');
     box.querySelector('.tier-sheet__ramp').addEventListener('click',e=>{

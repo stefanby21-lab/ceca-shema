@@ -327,13 +327,14 @@ window.ArenaSeatView = (function () {
       const gradient = ctx.createLinearGradient(0, 0, banner.width, banner.height);
       gradient.addColorStop(0, '#0c121d'); gradient.addColorStop(.55, '#263238'); gradient.addColorStop(1, '#080c12');
       ctx.fillStyle = gradient; ctx.fillRect(0, 0, banner.width, banner.height);
-      const poster = new Image(); poster.src = 'assets/toni-storaro.webp';
+      const poster = new Image(); poster.src = 'assets/ceca.webp';
       try { await poster.decode(); } catch (_) {}
       if (disposed) return;
       if (poster.naturalWidth) {
         ctx.save(); ctx.beginPath(); ctx.rect(0, 0, 650, 720); ctx.clip();
-        const ratio = 650 / poster.naturalWidth;
-        ctx.drawImage(poster, 0, 0, 650, poster.naturalHeight * ratio); ctx.restore();
+        const ratio = 650 / poster.naturalWidth, shown = poster.naturalHeight * ratio;
+        // Афишът е квадрат: стои по средата на височината, не залепен отгоре.
+        ctx.drawImage(poster, 0, Math.max(0, (720 - shown) / 2), 650, shown); ctx.restore();
         const fade = ctx.createLinearGradient(450, 0, 690, 0);
         fade.addColorStop(0, '#151e2600'); fade.addColorStop(1, '#151e26');
         ctx.fillStyle = fade; ctx.fillRect(450, 0, 240, 720);
@@ -342,11 +343,11 @@ window.ArenaSeatView = (function () {
       ctx.strokeRect(715, 85, 1245, 550);
       const textCenter = 1338;
       ctx.textAlign = 'center'; ctx.fillStyle = '#d3c49b';
-      ctx.font = '500 28px sans-serif'; ctx.fillText('Ю Б И Л Е Е Н   К О Н Ц Е Р Т', textCenter, 245);
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 100px sans-serif';
-      ctx.fillText('ТОНИ СТОРАРО', textCenter, 380, 1160);
+      ctx.font = '500 28px sans-serif'; ctx.fillText('К О Н Ц Е Р Т', textCenter, 235);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 210px sans-serif';
+      ctx.fillText('CECA', textCenter, 410, 1160);
       ctx.fillStyle = '#d3c49b'; ctx.font = '28px sans-serif';
-      ctx.fillText('VASIL IVANOV BAND · АРЕНА 8888', textCenter, 475);
+      ctx.fillText('7 НОЕМВРИ 2026 · АРЕНА 8888', textCenter, 510);
       const texture = new T.CanvasTexture(banner);
       texture.colorSpace = T.SRGBColorSpace;
       texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
@@ -471,48 +472,49 @@ window.ArenaSeatView = (function () {
         positions.forEach((p,i)=>{matrix.position.set(p.x,p.y||0,p.z);matrix.rotation.set(0,p.angle||0,0);matrix.updateMatrix();mesh.setMatrixAt(i,matrix.matrix);});
         scene.add(mesh);return mesh;
       }
+      // Коктейлни маси за 6 души: малък плот на висок крак, покрит с плат, и два
+      // бар стола откъм зрителите. Сцената е към -z, затова столовете са на +z
+      // и гостите гледат към нея. Местата на масата са билети, не столове.
+      const TOP_R=.46, TOP_Y=1.05, EYE_Y=1.45, STOOLS=[[-.38,.82],[.38,.82]];
       const tablePositions=tables.map(f=>({x:f.geometry.coordinates[0]*scale,z:-f.geometry.coordinates[1]*scale}));
-      // Radial linen drape: gentle folds, a curved hem and an uninterrupted top.
+      // Всичко върху плота се вдига до височината му (обядвалните маси бяха по-ниски).
+      const lift=TOP_Y-.783;
+      const topPositions=tablePositions.map(p=>({x:p.x,z:p.z,y:lift}));
+      // Плат по плота: меки гънки и изрязан подгъв до пода, без прекъсване отгоре.
       const clothPoints=[], clothNormals=[], clothIndices=[], segments=96, rings=12;
       for(let j=0;j<=rings;j++)for(let i=0;i<=segments;i++){
-        const a=i/segments*Math.PI*2,t=j/rings,r=1.065+.035*t+Math.sin(a*24)*.035*Math.pow(t,1.4);
-        clothPoints.push(Math.sin(a)*r,.78-.70*t+.013*Math.cos(a*24)*t,Math.cos(a)*r);
+        const a=i/segments*Math.PI*2,t=j/rings,r=TOP_R+.03*t+Math.sin(a*24)*.016*Math.pow(t,1.4);
+        clothPoints.push(Math.sin(a)*r,TOP_Y*(1-.92*t)+.006*Math.cos(a*24)*t,Math.cos(a)*r);
         if(j<rings&&i<segments){const n=j*(segments+1)+i;clothIndices.push(n,n+segments+1,n+1,n+1,n+segments+1,n+segments+2);}
       }
       const skirt=new T.BufferGeometry();skirt.setAttribute('position',new T.Float32BufferAttribute(clothPoints,3));skirt.setIndex(clothIndices);skirt.computeVertexNormals();
       linen.side=T.DoubleSide;
-      instances(merged([[new T.CylinderGeometry(1.067,1.067,.025,96),0,.783],[skirt]]),linen,tablePositions);
+      instances(merged([[new T.CylinderGeometry(TOP_R+.004,TOP_R+.004,.025,64),0,TOP_Y+.003],[skirt]]),linen,tablePositions);
       const floorChairs=v.seats.features.filter(f=>f.properties.el===0).map(f=>({x:f.geometry.coordinates[0]*scale,z:-f.geometry.coordinates[1]*scale,angle:0}));
-      const banquetChairs=[], settings=[];
-      tables.forEach(f=>{const [x,y]=f.geometry.coordinates,n=f.properties.seats||8;for(let c=0;c<n;c++){
-        const a=c*Math.PI*2/n;
-        banquetChairs.push({x:x*scale+Math.sin(a)*1.4,z:-y*scale+Math.cos(a)*1.4,angle:a});
-        settings.push({x:x*scale+Math.sin(a)*.79,z:-y*scale+Math.cos(a)*.79,angle:a});
-      }});
+      const stoolSpots=[], glassSpots=[];
+      tables.forEach(f=>{const [x,y]=f.geometry.coordinates;
+        for(const [dx,dz] of STOOLS)stoolSpots.push({x:x*scale+dx,z:-y*scale+dz,angle:0});
+        // Две чаши върху плота, встрани от цветята.
+        for(const dx of [-.42,.18])glassSpots.push({x:x*scale+dx,y:lift,z:-y*scale+.12});
+      });
       const floorParts=[[new T.BoxGeometry(.46,.045,.42),0,.445],[roundedBox(.44,.25,.035,.065),0,.72,.185]];
       for(const x of [-.19,.19]){floorParts.push([new T.CylinderGeometry(.013,.013,.78,6),x,.39,.18],[new T.CylinderGeometry(.013,.013,.43,6),x,.215,-.18]);}
       instances(merged(floorParts),black,floorChairs);
-      const frames=[[roundedBox(.48,.43,.048,.14),0,.82,.205]];
-      for(const x of [-.2,.2])for(const z of [-.18,.18])frames.push([new T.CylinderGeometry(.017,.012,.45,8),x,.225,z]);
-      for(const x of [-.2,.2])frames.push([new T.CylinderGeometry(.014,.014,.43,8),x,.65,.205]);
-      frames.push([new T.BoxGeometry(.42,.025,.025),0,.19,.18]);
-      instances(merged(frames),black,banquetChairs);
-      const seatPad=roundedBox(.46,.43,.075,.075);seatPad.rotateX(-Math.PI/2);
-      instances(merged([[seatPad,0,.47],[roundedBox(.405,.35,.035,.12),0,.82,.17]]),upholstery,banquetChairs);
-      // Each cover has a porcelain plate, folded napkin and fine-stemmed wine glass.
-      instances(merged([[new T.CylinderGeometry(.13,.12,.015,28),0,.81],[new T.BoxGeometry(.065,.022,.13),0,.83,0,0,.25]]),linen,settings);
+      // Бар стол: тъмен крак, плоска основа, стъпенка и меко кръгло седло.
+      instances(merged([[new T.CylinderGeometry(.021,.021,.7,10),0,.37],[new T.CylinderGeometry(.19,.21,.03,28),0,.015],[new T.TorusGeometry(.15,.011,6,28),0,.3,0,Math.PI/2]]),black,stoolSpots);
+      instances(merged([[new T.CylinderGeometry(.19,.19,.075,28),0,.775]]),upholstery,stoolSpots);
       const goblet=new T.LatheGeometry([new T.Vector2(.008,0),new T.Vector2(.033,.02),new T.Vector2(.048,.068),new T.Vector2(.041,.12)],16);
-      instances(merged([[new T.CylinderGeometry(.038,.038,.006,16),.12,.815,-.12],[new T.CylinderGeometry(.004,.004,.095,8),.12,.862,-.12],[goblet,.12,.91,-.12]]),glass,settings);
-      instances(merged([[new T.TorusGeometry(.041,.002,5,20),.12,1.03,-.12,Math.PI/2]]),linen,settings);
-      // Low arrangements keep the sightline above the centerpiece clear.
-      instances(merged([[new T.CylinderGeometry(.09,.065,.12,20),0,.85]]),upholstery,tablePositions);
+      instances(merged([[new T.CylinderGeometry(.038,.038,.006,16),.12,.815,-.12],[new T.CylinderGeometry(.004,.004,.095,8),.12,.862,-.12],[goblet,.12,.91,-.12]]),glass,glassSpots);
+      instances(merged([[new T.TorusGeometry(.041,.002,5,20),.12,1.03,-.12,Math.PI/2]]),linen,glassSpots);
+      // Ниска ваза: погледът над плота остава свободен.
+      instances(merged([[new T.CylinderGeometry(.09,.065,.12,20),0,.85]]),upholstery,topPositions);
       const leaves=[],flowers=[];
       for(let i=0;i<9;i++){const a=i*2.4,r=i? .11:0,x=Math.cos(a)*r,z=Math.sin(a)*r,y=.995+(i%3)*.017;
         const leaf=new T.SphereGeometry(.07,8,6);leaf.scale(1,.35,1.6);leaves.push([leaf,x,.95,z,0,a]);
         flowers.push([new T.SphereGeometry(.026,8,6),x,y+.012,z]);
         for(let k=0;k<5;k++){const angle=k*Math.PI*2/5,geo=new T.SphereGeometry(.028,8,6);geo.scale(1,.45,1);flowers.push([geo,x+Math.sin(angle)*.025,y,z+Math.cos(angle)*.025]);}
       }
-      instances(merged(leaves),foliage,tablePositions);instances(merged(flowers),petal,tablePositions);
+      instances(merged(leaves),foliage,topPositions);instances(merged(flowers),petal,topPositions);
       // FOH occupies the intentional gap behind the middle floor block.
       box(8.8,.16,4.0,0,.08,24.2,black);
       box(5,.75,.8,0,.52,23.5,black);
@@ -554,15 +556,16 @@ window.ArenaSeatView = (function () {
       let currentTable = null, currentSeat = own, chairPosition = 0;
       function positionView() {
         const point=currentTable?currentTable.geometry.coordinates:currentSeat.geometry.coordinates;
-        camera.position.set(point[0]*scale, currentTable?1.15:(currentSeat.properties.el||0)*scale+1.15,-point[1]*scale);
-        if(currentTable){const angle=chairPosition*Math.PI*2/(currentTable.properties.seats||8);camera.position.x+=Math.sin(angle)*1.4;camera.position.z+=Math.cos(angle)*1.4;}
+        camera.position.set(point[0]*scale, currentTable?EYE_Y:(currentSeat.properties.el||0)*scale+1.15,-point[1]*scale);
+        // Гледната точка на масата е от един от двата бар стола.
+        if(currentTable){const [dx,dz]=STOOLS[chairPosition%STOOLS.length];camera.position.x+=dx;camera.position.z+=dz;}
         const direction=look.clone().sub(camera.position);homeYaw=Math.atan2(direction.x,-direction.z);homePitch=Math.atan2(direction.y,Math.hypot(direction.x,direction.z));
         yaw=homeYaw;pitch=homePitch;fov=70;tableChair.hidden=!currentTable;
         const име=currentTable?currentTable.properties.name+' · стол '+(chairPosition+1):viewpoint.selectedOptions[0].textContent;
         overlay.setAttribute('aria-label',име);schedule();
       }
       on(viewpoint,'change',()=>{currentTable=tables.find(t=>t.properties.mk===viewpoint.value)||null;currentSeat=v.seats.features.find(s=>s.properties.mk===viewpoint.value)||own;chairPosition=0;positionView();});
-      on(tableChair,'click',()=>{chairPosition=(chairPosition+1)%(currentTable.properties.seats||8);positionView();});
+      on(tableChair,'click',()=>{chairPosition=(chairPosition+1)%STOOLS.length;positionView();});
       let yaw = homeYaw,
         pitch = homePitch,
         fov = 70;

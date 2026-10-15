@@ -3941,15 +3941,7 @@ button {
   .svg-map-toolbar { top: 64px; }
   .svg-map-tip { top: 118px; }
 }
-#arena-plan-svg .svg-seat-number { font-family: var(--font); font-weight: 700; text-anchor: middle; pointer-events: none; }
-#arena-plan-svg .lb-min { opacity: 0; }
-#arena-plan-svg.z-near .lb-min { opacity: 1; }
-#arena-plan-svg .lb-sect { fill: #435979; }
-#arena-plan-svg .lb-entry { fill: #A86404; }
-#arena-plan-svg [data-kind="seat"], #arena-plan-svg [data-kind="table"] { cursor: pointer; }
-#arena-plan-svg [data-kind="seat"]:focus-visible { outline: none; stroke: #0B1B3A !important; stroke-width: 3px !important; }
-
-#arena-plan-svg .sect.is-focused > g > path { fill: #153D8A; }
+/* Стиловете на самия чертеж (#ceca-plan-svg) са вградени в ceca-plan-svg.js. */
 
 /* Recovery stays usable when a graphics context fails after the initial probe. */
 .startup-failure p { max-width:520px;text-align:center; }

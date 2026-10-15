@@ -61,10 +61,16 @@
       // Отделните билети могат да се премахват и след групов избор.
       sel = [],
       // Масите са свой списък: масата не е място от схемата, а цяла покупка
-      // за 8 души. Влиза в същия списък „Избрано" като един ред.
+      // за всичките ѝ места. Влиза в същия списък „Избрано" като един ред.
       selT = [],
       P = { min: S, max: g };
     const MAX_SELECTED_SEATS = 10;
+    // Местата на една маса идват от данните (свойството seats). 6 е само
+    // резервата, ако го няма: масите на концерта са коктейлни, за 6 души.
+    const TABLE_SEATS_FALLBACK = 6;
+    const tableSeats = (t) => Number(t && t.seats) || TABLE_SEATS_FALLBACK;
+    const firstTable = ((o.tables && o.tables.features) || [])[0];
+    const TABLE_SEATS = tableSeats(firstTable && firstTable.properties);
     const selectionDraftKey = 'arena8888.selection.draft.v1';
     let selectionDraft = null;
     try { selectionDraft = JSON.parse(sessionStorage.getItem(selectionDraftKey) || 'null'); } catch (_) {}
@@ -167,8 +173,8 @@
             ((i.quantity = q || 2), partySync(), y());
           },
         }));
-    // Избрана маса значи 8 души на едно място. „Друга" тогава трябва да върне
-    // ДРУГА МАСА на сходна цена, а не осем единични места отзад.
+    // Избрана маса значи цялата компания на едно място. „Друга" тогава трябва да върне
+    // ДРУГА МАСА на сходна цена, а не единични места отзад.
     const tableSeen = new Set();
     function tablePrice(t) { return i.feesIncluded ? (t.eurAll != null ? t.eurAll : t.eur) : t.eur; }
     function otherTable() {
@@ -208,7 +214,7 @@
       (window.__tablesSelected = function () {
         return selT.length;
       }));
-    // Портата питаше само за места, а масите са отделен продукт: 8 души,
+    // Портата питаше само за места, а масите са отделен продукт: цяла
     // купува се цяла. Който търси маса, нямаше откъде да разбере, че има.
     gateTables();
     // Цветното поле в легендата вече е бутон: води до свободните маси от своята
@@ -229,7 +235,7 @@
       // с която работи целият екран.
       a(window.UI, "notify") &&
         window.UI.notify({
-          text: "Маси по " + cena + " € за цялата маса, 8 души.",
+          text: "Маси по " + cena + " € за цялата маса, " + TABLE_SEATS + " души.",
           actionLabel: "Изберете маса",
           onAction: function () {
             Ie2(free[0].mk);
@@ -419,7 +425,7 @@
           '<button type="button" class="gate-tables__btn">' +
           '<span class="gate-tables__ramp" aria-hidden="true">' +
           levels.map((l) => '<i style="background:' + l.color + '"></i>').join("") +
-          '</span><span class="gate-tables__txt"><b>Или цяла маса за 8 души</b>' +
+          '</span><span class="gate-tables__txt"><b>Или цяла маса за ' + TABLE_SEATS + ' души</b>' +
           "<i>от " + Math.round(min) + " € за маса, " + Math.round(perSeat) + " € на място</i></span>" +
           '<span class="gate-tables__go" aria-hidden="true">→</span></button>';
         card.insertBefore(box, card.querySelector(".gate-continue"));
@@ -432,8 +438,8 @@
         more();
         box.querySelector("button").addEventListener("click", function () {
           // Излизането през масите пропускаше избрания брой и „препоръчай"
-          // после връщаше ЕДНО място. Броят се пренася, а масата е за 8 души.
-          ((i.quantity = gateQty || i.quantity || 8), partySync(), chipSync());
+          // после връщаше ЕДНО място. Броят се пренася, а масата е за цялата компания.
+          ((i.quantity = gateQty || i.quantity || TABLE_SEATS), partySync(), chipSync());
           const veil = card.closest(".modal-overlay");
           veil && veil.dispatchEvent(new MouseEvent("click", { bubbles: true }));
           Ze2();
@@ -566,7 +572,7 @@
           // „Препоръчай ми": търсачката попълва ИЗБОРА, не рисува отделни
           // предложения. Каквото намери, човекът вижда като свой избор и може
           // да махне всяко място поотделно.
-          // И на десктоп: избрана маса значи „дай друга МАСА", не осем места отзад.
+          // И на десктоп: избрана маса значи „дай друга МАСА", не единични места отзад.
           onRecommend: function () {
             if (selT.length && otherTable()) return;
             recommend(!0);
@@ -689,18 +695,18 @@
     function z(e) {
       b(e);
     }
-    // Масата е една покупка за 8 души - показва се като цяла оферта.
+    // Масата е една покупка за всичките ѝ места - показва се като цяла оферта.
     const tb2 = new Map(((o.tables && o.tables.features) || []).map((f) => [f.properties.mk, f.properties]));
     function selectedTicketCount() {
       return (
         sel.length +
         selT.reduce(function (count, mk) {
-          return count + Number((tb2.get(mk) || {}).seats || 8);
+          return count + tableSeats(tb2.get(mk));
         }, 0)
       );
     }
     function selectionLimitReached() {
-      warn("Можете да изберете най-много 10 билета в една поръчка. Една маса е за 8 души.", "Продължете", kupi);
+      warn("Можете да изберете най-много " + MAX_SELECTED_SEATS + " билета в една поръчка. Една маса е за " + TABLE_SEATS + " души.", "Продължете", kupi);
     }
     // Най-близкото свободно място в същата отсечка, което не оставя друго само.
     function drugoNablizo(mk) {
@@ -776,7 +782,7 @@
           bucketLabel: null,
         }),
         a(window.UI, "notify") &&
-          window.UI.notify({ text: "Изберете маса от блока - всяка маса се купува цяла, за 8 души." }),
+          window.UI.notify({ text: "Изберете маса от блока - всяка маса се купува цяла, за " + TABLE_SEATS + " души." }),
         // Отворена карта в панела: долният лист трябва да разбере, за да се
         // вдигне и да скрие ценовите категории. Иначе те оставаха смачкани
         // между лентата отгоре и картата отдолу, видими наполовина.
@@ -793,7 +799,7 @@
       }
       const at = selT.indexOf(e),
         beshe = at >= 0;
-      if (!beshe && selectedTicketCount() + Number(t.seats || 8) > MAX_SELECTED_SEATS) {
+      if (!beshe && selectedTicketCount() + tableSeats(t) > MAX_SELECTED_SEATS) {
         selectionLimitReached();
         return;
       }
@@ -807,7 +813,7 @@
             text:
               t.name +
               ": " +
-              (t.seats || 8) +
+              tableSeats(t) +
               " билета за " +
               Math.round(i.feesIncluded ? t.eurAll || t.eur : t.eur) +
               " €. Масата се купува цяла.",
@@ -950,11 +956,11 @@
           selT.reduce(function (sum, mk) {
             return sum + cena(tb2.get(mk) || {});
           }, 0),
-        // Масата е един ред в списъка, но 8 билета в сметката.
+        // Масата е един ред в списъка, но всичките ѝ места са билети в сметката.
         broi =
           sel.length +
           selT.reduce(function (n2, mk) {
-            return n2 + ((tb2.get(mk) || {}).seats || 8);
+            return n2 + tableSeats(tb2.get(mk));
           }, 0),
         redove = sel
           .map(function (mk) {
@@ -977,7 +983,7 @@
                 mk: mk,
                 sector: q.name || mk,
                 pano: "3d:" + mk,
-                seat: "цяла маса · " + (q.seats || 8) + " места",
+                seat: "цяла маса · " + tableSeats(q) + " места",
                 eur: cena(q),
               };
             }),
@@ -1024,8 +1030,8 @@
           window.UI.showSeatView({
             name: q.name || tMk,
             title: q.name || tMk,
-            subtitle: (q.seats || 8) + " места на масата · цялата маса се купува наведнъж",
-            seatLabel: (q.seats || 8) + " места",
+            subtitle: tableSeats(q) + " места на масата · цялата маса се купува наведнъж",
+            seatLabel: tableSeats(q) + " места",
             eur: q.eur,
             eurAll: q.eurAll,
             tier: null,
@@ -1284,7 +1290,7 @@
         }),
         tableItems = selT.map(function (mk) {
           const q = tb2.get(mk) || {},
-            quantity = Number(q.seats || 8),
+            quantity = tableSeats(q),
             price = checkoutPrice(q);
           return {
             id: mk,
@@ -1308,13 +1314,14 @@
       return {
         version: 1,
         event: {
-          id: "100090",
-          slug: "toni-storaro-yubileen-kontsert",
-          title: "ТОНИ СТОРАРО - ЮБИЛЕЕН КОНЦЕРТ",
-          date: "13 ноември 2026",
+          id: "ceca-2026-11-07",
+          slug: "ceca",
+          title: "CECA",
+          date: "7 ноември 2026",
           time: "20:00",
           venue: "Зала „Арена 8888 София“",
-          poster: "../assets/toni-storaro.webp",
+          organizer: (o.meta && o.meta.organizer) || "",
+          poster: "../assets/ceca.webp",
         },
         items: items,
         currency: "EUR",
@@ -1351,14 +1358,14 @@
         for (const item of savedItems) {
           const isTable = item.type === "table", isSeat = item.type === "seat";
           const record = isTable ? tb2.get(item.id) : isSeat ? h.get(item.id) : null;
-          const count = isTable ? 8 : 1;
+          const count = isTable ? tableSeats(record) : 1;
           const target = isTable ? selT : sel;
           if (!record || record.sold || record.offsale || !(record.eur > 0) ||
               target.includes(item.id) || restoredCount + count > MAX_SELECTED_SEATS) continue;
           target.push(item.id); restoredCount += count;
         }
         if (sel.length || selT.length) {
-          i.quantity = sel.length || 8;
+          i.quantity = sel.length || TABLE_SEATS;
           y();
           ne(selT.length ? selT[selT.length - 1] : sel[sel.length - 1]);
         }

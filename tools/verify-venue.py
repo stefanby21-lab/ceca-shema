@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Сверява генериран venue файл срещу оригиналната схема на kupibileti.bg.
 
-    python3 tools/verify-venue.py "<път>/KUPIBILETI.BG.html" venue-data-arena.js
+    python3 tools/verify-venue.py "<път>/KUPIBILETI.BG.html" venue-data.js
 
 Сравнява по сектори: брой места, етикети на редовете, номера на местата във
 всеки ред, брой маси. Излиза с код 1 при разлика.

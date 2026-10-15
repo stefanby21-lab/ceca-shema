@@ -40,11 +40,13 @@
         });
     }
     for (const [sector, list] of sectors) {
+      // Ложите (200-214) нямат точка в името: без този ред ставаха ниво 0,
+      // тоест седалки на пода. Те са на нивото на V.I.P, освен 204-207.
       const level =
-        sector === "V.I.P"
-          ? 2
-          : /^20[4-7]$/.test(sector)
-            ? 3
+        /^20[4-7]$/.test(sector)
+          ? 3
+          : sector === "V.I.P" || /^2\d\d$/.test(sector)
+            ? 2
             : Number(sector.split(".")[1]) || 0;
       list.sort((a, b) => a.depth - b.depth);
       list.forEach((row, index) =>

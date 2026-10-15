@@ -61,8 +61,8 @@ test('unrecovered graphics loss offers retry instead of an indefinitely blank ma
 
 const graphicsSources = [
  {dataset:{src:'vendor/maplibre-gl.js?v=1',webgl:'true'}},
- {dataset:{src:'venue-data-arena.js?v=1'}},
- {dataset:{src:'arena-plan-svg.js?v=1',svg:'true'}},
+ {dataset:{src:'venue-data-ceca.js?v=1'}},
+ {dataset:{src:'ceca-plan-svg.js?v=1',svg:'true'}},
  {dataset:{src:'map.js?v=1',fallback:'map-svg.js?v=1'}},
  {dataset:{src:'arena-seatview.js?v=1',webgl:'true'}},
  {dataset:{src:'app.js?v=1'}}
@@ -70,7 +70,7 @@ const graphicsSources = [
 test('denied WebGL loads the functional SVG map and skips graphics-only dependencies',()=>{
  const b=boot({sources:graphicsSources,getContext:()=>null});
  assert.match(b.scripts[0].src,/venue-data/);
- b.scripts[0].onload(); assert.match(b.scripts[1].src,/arena-plan-svg/);
+ b.scripts[0].onload(); assert.match(b.scripts[1].src,/ceca-plan-svg/);
  b.scripts[1].onload(); assert.match(b.scripts[2].src,/map-svg/);
  b.scripts[2].onload(); assert.match(b.scripts[3].src,/app.js/);
  b.window.SeatMapStartup.appReady(); b.window.SeatMapStartup.mapReady(); b.scripts[3].onload();

@@ -4,13 +4,15 @@ window.SeatMap = (function () {
   'use strict';
   const NS = 'http://www.w3.org/2000/svg';
   const BLUE = '#153D8A', GRAY = '#C3CAD5';
+  // Местата на маса идват от данните (свойството seats); 6 е само резервата.
+  const TABLE_SEATS_FALLBACK = 6;
   let venue, options, host, svg, numbers, caption, tip, camera, homeCamera, active = null;
   let stateDirty = true;
   const nodes = new Map(), positions = new Map();
   let selected = new Set(), selectedTables = new Set(), suggested = new Set(), highlighted = null;
   let tiers = null, minimum = null, maximum = null, fees = false, obstructed = false, party = 0;
   let queued = false, fullBounds, drag = null, moved = false;
-  const sections = new Map(), seats = new Map(), tables = new Map(), bySection = new Map();
+  const sections = new Map(), seats = new Map(), tables = new Map(), zones = new Map(), bySection = new Map();
   const listeners = new Map(), pointers = new Map();
   const list = value => value == null ? [] : Array.isArray(value) ? value : [value];
   const point = feature => positions.get(feature.properties.mk);
@@ -104,9 +106,14 @@ window.SeatMap = (function () {
       (!obstructed || !p.obstructed) && (!party || p.run >= party);
   }
   function label(p, table = false) {
-    const name = table ? p.name + ' · 8 места' : 'Сектор ' + p.s + ', ред ' + p.r + ', място ' + p.t;
+    const name = table ? p.name + ' · ' + (Number(p.seats) || TABLE_SEATS_FALLBACK) + ' места' : 'Сектор ' + p.s + ', ред ' + p.r + ', място ' + p.t;
     const price = fees && p.eurAll != null ? p.eurAll : p.eur;
     return name + (available(p) ? ' · ' + price + ' €' : ' · Не е достъпно');
+  }
+  // Правостоящите са зона, не място: името е в данните, купуването е отделна стъпка.
+  function zoneLabel(p) {
+    const price = fees && p.eurAll != null ? p.eurAll : p.eur;
+    return p.name + (available(p) ? ' · ' + price + ' €' : ' · Не е достъпно');
   }
   function color(p) { return venue.tiers.find(t => t.tier === p.tier)?.color || BLUE; }
   function button(node, name) {
@@ -123,6 +130,15 @@ window.SeatMap = (function () {
       if (kind === 'section') {
         node.setAttribute('tabindex', detail ? '-1' : '0');
         node.classList.toggle('is-focused', key === active || key === highlighted);
+        continue;
+      }
+      if (kind === 'standing') {
+        const p = zones.get(key).properties;
+        if (stateDirty) {
+          node.classList.toggle('is-selected', highlighted === key);
+          node.setAttribute('aria-disabled', String(!available(p)));
+          node.setAttribute('aria-label', zoneLabel(p));
+        }
         continue;
       }
       const table = kind === 'table', feature = table ? tables.get(key) : seats.get(key);
@@ -170,6 +186,9 @@ window.SeatMap = (function () {
       if (getZoom() <= 5) { frameTables(); options.onTablesZone?.(); }
       else options.onTableClick?.(key);
     }
+    // Зоната за правостоящи е голяма и се хваща и отдалече. Какво става после
+    // решава приложението (options.onStandingClick); без него кликът е без ефект.
+    if (kind === 'standing') options.onStandingClick?.(key);
   }
   function local(clientX, clientY) {
     const p = svg.createSVGPoint(); p.x = clientX; p.y = clientY;
@@ -251,8 +270,9 @@ window.SeatMap = (function () {
       bySection.get(key).push(f);
     }
     for (const f of venue.tables?.features || []) tables.set(f.properties.mk, f);
-    // This is the approved page's SVG, not hulls derived from seat coordinates.
-    const parsed = new DOMParser().parseFromString(window.ArenaPlanSVG, 'image/svg+xml');
+    for (const f of venue.standing?.features || []) zones.set(f.properties.mk, f);
+    // This is the admin's own plan (ceca-plan-svg.js), not hulls derived from seat coordinates.
+    const parsed = new DOMParser().parseFromString(window.CecaPlanSVG, 'image/svg+xml');
     svg = document.importNode(parsed.documentElement, true);
     svg.classList.add('svg-hall');
     svg.setAttribute('role', 'group');
@@ -263,13 +283,16 @@ window.SeatMap = (function () {
       const key = node.dataset.key, kind = node.dataset.kind;
       if (kind === 'section' && !sections.has(key)) continue;
       if (kind === 'table' && !tables.has(key)) continue;
+      if (kind === 'standing' && !zones.has(key)) continue;
       nodes.set(key, node);
       const box = node.getBBox();
       const position = svg.createSVGPoint();
       position.x = box.x + box.width / 2; position.y = box.y + box.height / 2;
       const transformed = position.matrixTransform(svg.getScreenCTM().inverse().multiply(node.getScreenCTM()));
       positions.set(key, [transformed.x, transformed.y]);
-      button(node, kind === 'section' ? 'Сектор ' + sections.get(key).properties.name : label((kind === 'table' ? tables : seats).get(key).properties, kind === 'table'));
+      button(node, kind === 'section' ? 'Сектор ' + sections.get(key).properties.name
+        : kind === 'standing' ? zoneLabel(zones.get(key).properties)
+        : label((kind === 'table' ? tables : seats).get(key).properties, kind === 'table'));
     }
     numbers = element('g', { class: 'svg-seat-numbers', 'aria-hidden': 'true' });
     svg.appendChild(numbers);

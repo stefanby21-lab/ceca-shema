@@ -9,7 +9,7 @@
 #   само се докладва      - styles.css, map.js, app.js, ui.js, seatview3d.js
 #                           (носят марката, махнатите предложения и местните
 #                           библиотеки)
-#   не се докосва изобщо  - index.html, venue-data-arena.js, middleware.js
+#   не се докосва изобщо  - index.html, venue-data-ceca.js, ceca-plan-svg.js
 #
 # Употреба:  bash tools/sync-engine.sh [път до kupibileti-seatmap]
 set -e

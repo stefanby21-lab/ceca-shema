@@ -7,7 +7,7 @@ const base = path.join(__dirname, "..");
 const context = { window: {}, console };
 vm.createContext(context);
 for (const file of [
-  "venue-data-arena.js",
+  "venue-data-ceca.js",
   "arena-geometry.js",
   "seatfinder.js",
 ])
@@ -76,20 +76,19 @@ test("unavailable, offsale and obstructed seats break adjacent groups before ran
   assert.ok(results.every((r) => !r.mks.includes("3") && !r.mks.includes("6")));
   SeatFinder.init(VENUE);
 });
-test("floor is flat and each grandstand rises away from the bowl", () => {
+test("there are no seats on the flat floor and each grandstand rises away from the bowl", () => {
+  // Подът е за маси и правостоящи; всяко място от схемата е на трибуна или в ложа.
   ArenaGeometry.apply(VENUE);
   const sectors = new Map();
   for (const f of VENUE.seats.features) {
     const p = f.properties;
-    if (p.s.includes(".0.")) assert.equal(p.el, 0);
-    else assert.ok(p.el > 0);
+    assert.ok(p.el > 0, p.s + " ред " + p.r);
     if (!sectors.has(p.s)) sectors.set(p.s, new Map());
     const rows = sectors.get(p.s);
     if (!rows.has(p.r)) rows.set(p.r, []);
     rows.get(p.r).push(f);
   }
-  for (const [sector, rows] of sectors) {
-    if (sector.includes(".0.")) continue;
+  for (const [, rows] of sectors) {
     const levels = [...rows.values()]
       .map((row) => ({
         depth:
@@ -103,6 +102,19 @@ test("floor is flat and each grandstand rises away from the bowl", () => {
     for (let i = 1; i < levels.length; i++)
       assert.ok(levels[i].height > levels[i - 1].height);
   }
+});
+test("boxes 200-214 stand at the V.I.P level, the rear 204-207 at the upper tier", () => {
+  ArenaGeometry.apply(VENUE);
+  const elevation = (sector) => {
+    const levels = VENUE.seats.features.filter((f) => f.properties.s === sector).map((f) => f.properties.el);
+    assert.ok(levels.length, sector);
+    return Math.min(...levels);
+  };
+  for (const box of ["200", "203", "209", "211", "214"])
+    assert.equal(elevation(box), ArenaGeometry.BASE[2], box);
+  for (const rear of ["204", "205", "206", "207"])
+    assert.equal(elevation(rear), ArenaGeometry.BASE[3], rear);
+  assert.equal(elevation("V.I.P"), ArenaGeometry.BASE[2]);
 });
 test('permanent seats face into the bowl perpendicular to their SVG row', () => {
   ArenaGeometry.apply(VENUE);
@@ -118,18 +130,25 @@ test('permanent seats face into the bowl perpendicular to their SVG row', () => 
     });
   }
 });
-test('3D compact gutters preserve floor seats, ticket identities, source coordinates and FOH gap',()=>{
+test('3D compact gutters keep ticket identities and source coordinates, and pull the rear stand toward the floor',()=>{
   context.structuredClone=structuredClone;
   const before=JSON.stringify(VENUE), view=ArenaGeometry.forView(VENUE);
   assert.equal(JSON.stringify(VENUE),before);
   assert.equal(view.seats.features.length,VENUE.seats.features.length);
   assert.equal(view.tables.features.length,VENUE.tables.features.length);
-  view.seats.features.forEach((f,i)=>{assert.equal(f.properties.mk,VENUE.seats.features[i].properties.mk);if(f.properties.el===0)assert.deepEqual(f.geometry.coordinates,VENUE.seats.features[i].geometry.coordinates);});
-  const bounds=s=>{const points=view.seats.features.filter(f=>f.properties.s===s).map(f=>f.geometry.coordinates);return [Math.min(...points.map(p=>p[1])),Math.max(...points.map(p=>p[1]))]};
-  const gap=(bounds('F.0.1')[0]-bounds('B.1.2')[1])*ArenaGeometry.SCALE;
-  assert.ok(gap>2&&gap<3.5,`rear center-to-center gutter ${gap}`);
-  assert.equal(view.seats.features.filter(f=>f.properties.s==='F.0.2').length,65);
+  assert.equal(view.tables.features.length,180);
+  let moved=0;
+  view.seats.features.forEach((f,i)=>{
+    const source=VENUE.seats.features[i];
+    assert.equal(f.properties.mk,source.properties.mk);
+    // Само задният ръб се приближава; страничните бордове се свиват по x, не по y.
+    const dy=f.geometry.coordinates[1]-source.geometry.coordinates[1];
+    if(source.geometry.coordinates[1]>-8.95)assert.equal(dy,0,f.properties.mk);
+    else{assert.ok(dy>=0&&dy<=3.15+1e-9,f.properties.mk);if(dy>3)moved++;}
+  });
+  assert.ok(moved>0,'the rear stand must be pulled in');
   for(const f of view.seats.features){assert.ok(f.geometry.coordinates.every(Number.isFinite));assert.ok(Number.isFinite(f.properties.seatYaw));}
+  for(const f of view.tables.features)assert.ok(f.geometry.coordinates.every(Number.isFinite));
 });
 test('3D side stands stay straight and retain a uniform floor setback', () => {
   context.structuredClone=structuredClone;
@@ -149,6 +168,8 @@ test('sector aisle infill stays local and keeps the central floor open', () => {
     assert.ok(tread.ring.flat().every(Number.isFinite));
     for(const p of tread.ring)assert.ok(Math.hypot(...p)>7,'infill must stay outside the central floor');
     const xs=tread.ring.map(p=>p[0]),ys=tread.ring.map(p=>p[1]);
-    assert.ok(Math.hypot(Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys))<3.5,'no slab may span distant sectors');
+    // Връзката е най-много 3.2 между две места плюс ширината на лентата; ложата
+    // се свързва със съседния сектор на същата височина по диагонал (до ~3.6).
+    assert.ok(Math.hypot(Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys))<3.8,'no slab may span distant sectors');
   }
 });

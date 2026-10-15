@@ -57,6 +57,18 @@ window.SeatMap = (function () {
     // се обръщаха докрай към нея. 55° покрива и най-страничния блок, без да
     // позволява камерата да мине зад гърба на зрителя.
     we = 55;
+  // Местата на маса идват от данните (свойството seats); 6 е само резервата.
+  // Масите на концерта са коктейлни: две бар столчета към всяка, а не по едно
+  // на място - затова столчетата в 3D са TABLE_STOOLS, а билетите са seats.
+  const TABLE_SEATS_FALLBACK = 6,
+    TABLE_STOOLS = 2;
+  function tableSeatsOf(p) {
+    return p && Number(p.seats) > 0 ? Number(p.seats) : TABLE_SEATS_FALLBACK;
+  }
+  function tableSeatsAll() {
+    const first = ((l && l.tables && l.tables.features) || [])[0];
+    return tableSeatsOf(first && first.properties);
+  }
   let i = null,
     // Таван и под за автоматичното кадриране. Не съвпадат с тези на картата -
     // ръчният зум стига по-далеч и в двете посоки.
@@ -522,7 +534,7 @@ window.SeatMap = (function () {
     };
   }
   // Масите в оригинала са квадрати. Тук се рисуват като кръгли маси: крак,
-  // падаща покривка, плот, ваза с цвете и осем столчета. Плотът е в цвета на
+  // падаща покривка, плот, ваза с цвете и две бар столчета. Плотът е в цвета на
   // ценовата категория, за да личи колко струва масата.
   function Un(cx, cy, r, n) {
     const out = [];
@@ -551,6 +563,8 @@ window.SeatMap = (function () {
   }
   // Външният ръб на масата (столчетата) спрямо радиуса на плота.
   const hx = 1.46;
+  // Ъгълът на всяко бар столче от посоката „на юг" (към зрителите), в радиани.
+  const STOOL_SPREAD = 0.62;
   function Vn() {
     const src = (l.tables && l.tables.features) || [];
     if (!src.length) return { type: "FeatureCollection", features: [] };
@@ -608,14 +622,15 @@ window.SeatMap = (function () {
             geometry: { type: "Polygon", coordinates: Un(c[0], c[1], rad, sides || 24) },
           });
         };
-      // Осемте столчета правят очевидно, че масата е за 8 души и се купува цяла.
-      const nseats = typeof p.seats == "number" && p.seats > 0 ? p.seats : 8,
-        chair = sold ? "#B9C1CC" : "#5C6B86";
-      for (let q = 0; q < nseats; q++) {
-        const ang = (q / nseats) * Math.PI * 2 + Math.PI / nseats;
+      // Две бар столчета откъм зрителите: сцената е на север (+y), столчетата
+      // са на юг от масата, така че гостите гледат към сцената, а масата е
+      // пред тях - както на чертежа на залата.
+      const chair = sold ? "#B9C1CC" : "#5C6B86";
+      for (let q = 0; q < TABLE_STOOLS; q++) {
+        const ang = -Math.PI / 2 + (q ? 1 : -1) * STOOL_SPREAD;
         out.push({
           type: "Feature",
-          properties: { part: "chair", sold: sold, mk: p.mk, name: p.name, base: 0, height: H * 0.52, color: chair },
+          properties: { part: "chair", sold: sold, mk: p.mk, name: p.name, base: 0, height: H * 0.7, color: chair },
           geometry: {
             type: "Polygon",
             coordinates: Un(c[0] + Math.cos(ang) * r * 1.26, c[1] + Math.sin(ang) * r * 1.26, r * 0.2, 10),
@@ -947,7 +962,7 @@ window.SeatMap = (function () {
       tr && tr.color != null && tr.tier != null && pi.push(["price-pill-t" + tr.tier, tr.color, 3]);
     })),
       // Същите балончета и за масите, но в лилавата гама: масата е друг
-      // продукт (цяла, за 8 души), а не по-скъпо място.
+      // продукт (цяла, за всичките ѝ места), а не по-скъпо място.
       ((l.meta && l.meta.tableLevels) || []).forEach(function (tl) {
         tl && tl.pill != null && tl.level != null && pi.push(["price-pill-m" + tl.level, tl.pill, 3]);
       }),
@@ -1205,7 +1220,7 @@ window.SeatMap = (function () {
             properties: {
               eur: best.properties.eur,
               eurAll: best.properties.eurAll,
-              seats: best.properties.seats || 8,
+              seats: tableSeatsOf(best.properties),
               tableLevel: best.properties.tableLevel,
             },
           }));
@@ -1238,7 +1253,7 @@ window.SeatMap = (function () {
         {
           type: "Feature",
           geometry: { type: "Point", coordinates: [sx, sy] },
-          properties: { eur: ev.eur, eurAll: ev.eurAll, seats: ev.seats || 8, tableLevel: ev.tableLevel },
+          properties: { eur: ev.eur, eurAll: ev.eurAll, seats: tableSeatsOf(ev), tableLevel: ev.tableLevel },
         },
       ],
     };
@@ -1247,7 +1262,7 @@ window.SeatMap = (function () {
     const c = _ ? ["get", "eurAll"] : ["get", "eur"];
     return [
       "format",
-      "Маси, 8 места",
+      "Маси, " + tableSeatsAll() + " места",
       { "font-scale": 0.78, "text-color": "#6B5A93" },
       "\n",
       {},
@@ -1264,14 +1279,14 @@ window.SeatMap = (function () {
       i.getLayer("table-price-labels") &&
         i.setLayoutProperty("table-price-labels", "visibility", vs ? "visible" : "none"));
   }
-  // Надписът на масата казва това, което човек ще купи: цялата маса за 8
-  // души. Цената на едно място стои в легендата, тук би подвела - масата не
+  // Надписът на масата казва това, което човек ще купи: цялата маса, с
+  // всичките ѝ места. Цената на едно място стои в легендата, тук би подвела - масата не
   // се дели.
   function tl2() {
     const c = _ ? ["get", "eurAll"] : ["get", "eur"];
     return [
       "format",
-      ["concat", ["to-string", ["coalesce", ["get", "seats"], 8]], " места"],
+      ["concat", ["to-string", ["coalesce", ["get", "seats"], TABLE_SEATS_FALLBACK]], " места"],
       { "font-scale": 0.78, "text-color": "#6B5A93" },
       "\n",
       {},
@@ -2765,7 +2780,7 @@ window.SeatMap = (function () {
     (Dt2 && i.getSource("tables") && i.setFeatureState({ source: "tables", id: Dt2 }, { selected: !1 }), (Dt2 = null));
     Ot2([]);
   }
-  // Избраните маси: една маса е една покупка за 8 души, но масите могат да са
+  // Избраните маси: една маса е една покупка за всичките ѝ места, но масите могат да са
   // няколко - затова състоянието е списък, а не едно поле.
   var Ts2 = [];
   function Ot2(e) {
