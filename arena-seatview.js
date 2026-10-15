@@ -512,7 +512,7 @@ window.ArenaSeatView = (function () {
       // 5 кена Vidas 250 мл - точно колкото са в офертата и нищо друго. Само тук:
       // на картата масите остават голи. Профилите са въртене на гладка крива
       // (LatheGeometry), не купчина цилиндри. Две нива на детайл: масата, от
-      // която гледаш, е с 24 сегмента, останалите 179 - с 10, като instancing.
+      // която гледаш, е с 24 сегмента, останалите 179 - с 6 сегмента, като instancing.
       // Среда за отраженията има само за напитките и плота: общата светлина на
       // залата остава същата.
       const envScene=new T.Scene();
@@ -558,7 +558,7 @@ window.ArenaSeatView = (function () {
       // бутилката в средата, водите дъга зад нея към сцената, кеновете дъга пред нея.
       // Цялата подредба е ЕДНА мрежа на тип материал (11 предмета са запечени в
       // геометрията, с малък завой на всеки), а маса = една инстанция със свой
-      // завой: така напитките са общо 6 извиквания за рисуване на ниво.
+      // завой: така близкото ниво са 6 извиквания за рисуване, далечното - 1.
       const SWEEP=[-.9,-.45,0,.45,.9];
       const WATERS=SWEEP.map(a=>[Math.sin(a)*.17,-Math.cos(a)*.17]);
       const CANS=SWEEP.map(a=>[Math.sin(a)*.2,Math.cos(a)*.2]);
@@ -576,8 +576,20 @@ window.ArenaSeatView = (function () {
       const cluster=(seg,pick)=>{const parts=[];
         const put=(make,at,k)=>at.forEach(([dx,dz],j)=>{const g=make(seg);(Array.isArray(g)?g:[g]).forEach(geo=>parts.push([geo,dx,0,dz,0,itemYaw(j+k),0]));});
         pick(put);return merged(parts);};
-      function drinkSet(seg,tableIdx){
+      // Далечният набор (останалите 179 маси): 6 сегмента, 3-5 точки на профил,
+      // без етикети - цветът на корпуса стига от разстояние - и ЕДНА мрежа с цветове
+      // по върховете. Така напитките на всички далечни маси са едно извикване
+      // за рисуване и около 360 триъгълника на маса.
+      const farMat=new T.MeshStandardMaterial({vertexColors:true,roughness:.5,metalness:.1});resources.add(farMat);
+      const farCluster=()=>{const parts=[],add=(geo,dx,dz,j)=>parts.push([geo,dx,0,dz,0,itemYaw(j),0]);
+        add(lathe([[.042,0],[.042,.17],[.0125,.22],[.0125,.262]],6,0x4a3620),0,0,0);
+        add(lathe([[.016,.262],[.016,.3],[0,.3]],6,0x15161a),0,0,0);
+        WATERS.forEach(([dx,dz],j)=>add(lathe([[.031,0],[.031,.12],[.0115,.18],[.0115,.205]],6,0xb4d6e8),dx,dz,j+1));
+        CANS.forEach(([dx,dz],j)=>add(lathe([[.0265,0],[.0265,.135],[0,.135]],6,0x17996f),dx,dz,j+7));
+        return merged(parts);};
+      function drinkSet(seg,tableIdx,far){
         const spots=tableIdx.map(t=>({x:tablePositions[t].x,z:tablePositions[t].z,y:TOP_Y,angle:tableYaw(t)}));
+        if(far)return [instances(farCluster(),farMat,spots)];
         return [
           instances(cluster(seg,put=>put(bottle.glass,[[0,0]],0)),spiritGlass,spots),
           instances(cluster(seg,put=>put(bottle.label,[[0,0]],0)),spiritLabelMat,spots),
@@ -588,10 +600,10 @@ window.ArenaSeatView = (function () {
           instances(cluster(seg,put=>{put(bottle.metal,[[0,0]],0);put(water.metal,WATERS,1);put(can.metal,CANS,7);}),capMetal,spots)];
       }
       const allIdx=tables.map((_,i)=>i);
-      const lowSet=drinkSet(10,allIdx);
+      const lowSet=drinkSet(6,allIdx,true);
       const highSet=drinkSet(24,[0]);
-      // Масата, от която гледаш, получава детайлния набор (24 сегмента);
-      // обикновената ѝ копия (10) се скрива с нулев мащаб. Работи се само при
+      // Масата, от която гледаш, получава детайлния набор (24 сегмента, пълни
+      // профили, етикети); далечната ѝ копия (6 сегмента) се скрива с нулев мащаб. Работи се само при
       // смяна на гледната точка, не на кадър.
       let drinkOwn=-2;
       const hideMatrix=new T.Object3D();hideMatrix.scale.set(0,0,0);hideMatrix.updateMatrix();

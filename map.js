@@ -633,18 +633,20 @@ window.SeatMap = (function () {
         };
       for (let q = 0; q < TABLE_STOOLS; q++) {
         const ang = -Math.PI / 2 + (q ? 1 : -1) * STOOL_SPREAD,
-          sx = c[0] + Math.cos(ang) * r * 1.26,
-          sy = c[1] + Math.sin(ang) * r * 1.26,
-          hs = r * 0.2,
-          lg = r * 0.025,
+          sx = c[0] + Math.cos(ang) * r * 1.32,
+          sy = c[1] + Math.sin(ang) * r * 1.32,
+          // Щъркел: малка седалка високо на дълги тънки крака (седалката е на
+          // 0.77-0.80 от височината на масата), с тънка рамка за краката.
+          hs = r * 0.15,
+          lg = r * 0.02,
           cl = sold ? GREY : METAL;
         [-1, 1].forEach(function (dx) {
           [-1, 1].forEach(function (dy) {
-            part("chair", sq(sx + dx * (hs - lg), sy + dy * (hs - lg), lg), 0, H * 0.74, cl);
+            part("chair", sq(sx + dx * (hs - lg), sy + dy * (hs - lg), lg), 0, H * 0.77, cl);
           });
         });
-        part("chair", sqRing(sx, sy, hs - lg, hs - lg * 2.6), H * 0.3, H * 0.33, cl);
-        part("chair", sq(sx, sy, hs), H * 0.74, H * 0.8, cl);
+        part("chair", sqRing(sx, sy, hs - lg, hs - lg * 2.2), H * 0.31, H * 0.33, cl);
+        part("chair", sq(sx, sy, hs), H * 0.77, H * 0.8, cl);
       }
       // Маса: ниска основа, тънка колона и плътният цветен плот.
       part("base", Un(c[0], c[1], r * 0.5, 20), 0, H * 0.05, sold ? GREY_DARK : METAL_DARK);
