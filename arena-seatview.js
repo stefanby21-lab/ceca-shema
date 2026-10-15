@@ -123,11 +123,13 @@ window.ArenaSeatView = (function () {
         v = G.forView(options.venue),
         scale = G.SCALE,
         focus = v.focus,
-        // Правостоящите са гледна точка без място: центърът на зоната, очи на 1.65 м.
+        // Правостоящите са гледна точка без място: по средата, 3 м зад предната ограда
+        // (там искат да стоят хората), очи на 1.65 м, с лице към сцената; квадратът от
+        // надписи на пода остава зад гърба.
         standingFeature = ((options.venue.standing || {}).features || [])[0],
         standingOwn = standingFeature ? (() => {
           const ring = standingFeature.geometry.coordinates[0].map((p) => G.viewPoint(p));
-          return { geometry: { coordinates: [(Math.min(...ring.map((p) => p[0])) + Math.max(...ring.map((p) => p[0]))) / 2, (Math.min(...ring.map((p) => p[1])) + Math.max(...ring.map((p) => p[1]))) / 2] },
+          return { geometry: { coordinates: [(Math.min(...ring.map((p) => p[0])) + Math.max(...ring.map((p) => p[0]))) / 2, Math.max(...ring.map((p) => p[1])) - 3 / scale] },
             properties: { mk: standingFeature.properties.mk, name: standingFeature.properties.name, el: 0 }, standing: true };
         })() : null,
         own = v.seats.features.find((f) => f.properties.mk === options.mk) || v.tables.features.find((f) => f.properties.mk === options.mk)
