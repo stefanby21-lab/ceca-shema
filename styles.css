@@ -1,0 +1,3958 @@
+@import url("fonts/site.css");
+
+:root {
+  color-scheme: only light;
+  /* Токените идват от дизайн системата на сайта Арена 8888 (prototype/styles.css).
+     Схемата е част от същия проект, затова тук не се измислят нови цветове -
+     само се пресъздават под имената, с които този интерфейс вече работи.
+     Идентичността е СВЕТЛА: бяло и синьо. Повърхностите са бели и бледосини,
+     текстът е тъмносиньо мастило, а стъклените балончета са бял прозрачен
+     тинт върху картата, не плътни плочи. */
+
+  /* повърхности */
+  --bg:          #FFFFFF;
+  --card:        #F5F7FB;
+  --card-2:      #EDF1F8;
+  --card-3:      #E1E7F1;
+  --line:        rgba(11, 27, 58, .12);
+  --line-2:      rgba(11, 27, 58, .24);
+
+  /* текст */
+  --ink:         #0B1B3A;   /* 15.6:1 върху бяло */
+  --ink-soft:    #46587A;   /* 7.2:1 */
+  --ink-faint:   #5C6B86;   /* 5.4:1 върху бяло, 4.7:1 върху --card-2; #667590 от сайта пада под AA върху бледосиньо */
+
+  /* състояние: едно синьо за целия интерфейс */
+  --accent:      #1D5AD0;   /* бутони: бял текст върху него */
+  --accent-2:    #153D8A;   /* текст и активни детайли */
+  --accent-soft: rgba(29, 90, 208, .10);
+  --accent-ring: rgba(29, 90, 208, .35);
+  --brand-red:   #F5A524;   /* кехлибарът на сайта заема мястото на червеното; само като запълване с тъмен текст */
+
+  /* стъкло: прозрачен бял тинт, за да прозира картата */
+  --glass-tint:  rgba(255, 255, 255, .52);
+  --glass-sheen: linear-gradient(152deg, rgba(255, 255, 255, .72) 0%, rgba(255, 255, 255, .22) 44%, rgba(255, 255, 255, .46) 100%);
+  --glass-line:  rgba(255, 255, 255, .78);
+  --glass-blur:  blur(22px) saturate(170%) contrast(1.02);
+  --glass-edge:  inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 0 1px rgba(255, 255, 255, .40), inset 0 -12px 26px rgba(21, 61, 138, .06), 0 14px 38px rgba(11, 27, 58, .16);
+
+  /* шапка */
+  --header-1:    #FFFFFF;
+  --header-2:    #F5F7FB;
+
+  /* форма: една стълбица за целия екран */
+  --radius:      18px;
+  --radius-sm:   12px;
+
+  /* движение: една стълбица за целия екран.
+     Вградените `ease` и `ease-out` са плахи - тръгват бавно точно в кадъра,
+     който окото гледа. Тези две криви тръгват веднага и спират меко. */
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast:    0.12s;
+  --dur-press:   0.16s;
+  --dur-menu:    0.16s;
+  --dur-ui:      0.2s;
+  --dur-sheet:   0.3s;
+
+  --shadow-card: 0 1px 2px rgba(11, 27, 58, .10), 0 18px 50px rgba(11, 27, 58, .16);
+  --shadow-pop:  0 2px 6px rgba(11, 27, 58, .12), 0 22px 60px rgba(11, 27, 58, .20);
+
+  /* Sofia Sans е рисуван за българска кирилица: с lang="bg" `locl` сменя
+     формите на в г д и к п т ц ш щ */
+  --font:        "Sofia Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Sofia Sans Condensed", "Sofia Sans", "Arial Narrow", sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+/* Полетата за въвеждане получават повърхността и мастилото на темата изрично:
+   иначе браузърът им слага своите цветове и те изглеждат чужди на панела.
+   Правилото е общо, за да не се повтори при ново поле. */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  background: var(--card-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-family: inherit;
+}
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"])::placeholder,
+textarea::placeholder {
+  color: var(--ink-faint);
+}
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+/* Телефон: без авто-зуум при бързи двойни докосвания (пинчът остава). */
+html, body, a, button, input, select, textarea, label, summary, [role="button"] { touch-action: manipulation; }
+/* iOS зуумва при фокус върху поле под 16px. */
+@media (pointer: coarse) {
+  input.party-input, input.price-input, select.arena-view__viewpoint, .arena-view select { font-size: 16px; }
+}
+[hidden] {
+  display: none !important;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+button {
+  font-family: inherit;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+:focus-visible {
+  /* Тъмното синьо, не бутонното: --accent-2 (#153D8A) върху --card-2 дава
+     над 8:1, тоест далеч над прага 3:1 на WCAG 1.4.11 точно там, където са
+     хапчетата. Отстъпът от 2px пази пръстена да не ляга върху сините
+     бутони - съседите му са фонът на панела и от двете страни. */
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+#app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  height: 100dvh;
+}
+.workspace {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 30vw, 400px);
+  min-height: 0;
+}
+.topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 64px;
+  padding: 0 22px;
+  /* Без това шапката разпъваше цялата страница на телефон. */
+  min-width: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--header-1), var(--header-2));
+  border-bottom: 1px solid var(--line);
+}
+.topbar-branding {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+/* Стрелката беше кръгче преди логото и мълчеше: човек трябваше да гадае
+   какво го чака от другата страна. Сега е след логото, носи думата и стои
+   точно преди името на събитието - реда, по който се чете лентата. */
+.topbar-back {
+  display: inline-flex;
+  height: 34px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 0 13px 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  /* Кирилицата иска въздух отгоре: под 1.12 Й и Ъ се слепват с реда. */
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+.topbar-back svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.topbar-back:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .topbar-back:hover {
+    border-color: rgba(11, 27, 58, 0.34);
+    background: var(--card-2);
+    color: var(--accent-2);
+  }
+}
+.brand {
+  display: flex;
+  align-items: center;
+}
+/* Знакът е същият като в шапката на сайта: Sofia Sans Condensed, главни,
+   с числото в светло синьо. Води обратно към arena-8888.vercel.app. */
+.brand {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  /* кирилицата иска въздух: под 1.12 Й и Ъ се слепват с реда отгоре */
+  line-height: 1.14;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.brand span {
+  margin-left: .28em;
+  color: var(--accent-2);
+}
+@media (hover: hover) and (pointer: fine) {
+  .brand:hover span {
+    color: var(--ink);
+  }
+}
+.event {
+  padding-left: 18px;
+  border-left: 1px solid var(--line-2);
+  min-width: 0;
+}
+.event-title {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.event-sub {
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+.brand {
+  flex: 0 0 auto;
+}
+.event {
+  flex: 1 1 auto;
+}
+/* Превключвател на залата: двете схеми са различни събития, затова стои в
+   шапката, а не някъде из настройките. */
+.live-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 #16a34a8c;
+  animation: live-pulse 2s ease-out infinite;
+}
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 #16a34a8c;
+  }
+  70% {
+    box-shadow: 0 0 0 7px #16a34a00;
+  }
+  to {
+    box-shadow: 0 0 #16a34a00;
+  }
+}
+/* Лентата с филтри е закотвен хедър на колоната, а не sticky елемент вътре в
+   скрола - при sticky съдържанието прозираше над нея и изглеждаше счупено. */
+.sheet-handle {
+  display: none;
+}
+.sidebar {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+}
+.sidebar-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+  padding: 4px 14px 18px;
+}
+.listing-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 2px 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.listing-group:after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line);
+}
+.listing-group.is-pinned {
+  color: var(--accent);
+}
+.listing-group.is-pinned:after {
+  background: var(--accent-ring);
+}
+.listing-row .lr-level {
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-weight: 600;
+  margin-left: -4px;
+}
+.lr-seat {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 1px;
+}
+/* Избрано: всеки билет е ред със своя цена и свое хиксче, отдолу общата сума.
+   „Премахни всички" е малко бутонче в заглавния ред, за да не изяжда място
+   колкото картата на мястото. */
+.picklist {
+  /* Количката е единственото, което се свива, когато панелът остане без
+     място - ценовите категории и картата долу пазят своята височина.
+     Редовете се търкалят вътре в нея, а сумата остава залепена под тях;
+     иначе лепкавата карта отдолу лягаше върху реда с общата сума и тя се
+     показваше само ако човек познае, че панелът се скролва. */
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+/* Дъното на свиването стои тук, а не на списъка: иначе картата се свиваше
+   под съдържанието си и сумата излизаше извън нея. Два реда + сумата. */
+.picklist:has(.pk-card) {
+  min-height: 190px;
+}
+.pk-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pk-head .block-title {
+  padding-bottom: 0;
+}
+/* Разрушително действие: червена черта наоколо и червено хиксче. Плътно
+   червено копче би теглило окото повече от „Купи билети". */
+.pk-clear {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 5px 11px;
+  /* Бяло копче с червен пръстен вътре в рамката - самият бутон остава светъл
+     с тъмен текст, за да не крещи повече от "Купи билети". */
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: #FFFFFF;
+  box-shadow: inset 0 0 0 1px rgba(212, 53, 28, .55);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-press) ease,
+    box-shadow var(--dur-press) ease,
+    color var(--dur-press) ease,
+    transform var(--dur-press) var(--ease-out);
+}
+.pk-clear svg {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  color: #D4351C;
+}
+@media (hover: hover) and (pointer: fine) {
+  .pk-clear:hover {
+    background: #FDECEA;
+    box-shadow: inset 0 0 0 1px rgba(212, 53, 28, 1);
+  }
+}
+.pk-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.pk-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pk-list::-webkit-scrollbar {
+  width: 8px;
+}
+.pk-list::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.pk-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pk-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px 9px 14px;
+}
+.pk-row + .pk-row {
+  border-top: 1px solid var(--line);
+}
+.pk-name {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.pk-sector {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pk-seat {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pk-price {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* Червено е само хиксчето - то е единственото разрушително действие в реда. */
+.pk-360 {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent-2);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  gap: 4px;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-press) ease,
+    border-color var(--dur-press) ease;
+}
+/* Маса няма панорама: бутонът остава невидим, но държи мястото си, за да не
+   се разместват хиксовете по редовете. */
+.pk-360.is-off {
+  visibility: hidden;
+  pointer-events: none;
+}
+.pk-360 svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .pk-360:hover:not(:disabled) {
+    border-color: var(--accent-2);
+    background: var(--accent-soft);
+  }
+}
+.pk-360:disabled {
+  border-color: var(--line);
+  background: rgba(11, 27, 58, .03);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+  opacity: .72;
+}
+/* Подът на количката: сумата и бутонът са едно тяло. */
+.pk-foot {
+  flex: none;
+  padding: 0 12px 12px;
+  background: var(--card-2);
+}
+.pk-foot .btn-buy {
+  margin-top: 0;
+}
+.pk-x {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #D4351C;
+  cursor: pointer;
+  transition:
+    color var(--dur-press) ease,
+    transform var(--dur-press) var(--ease-out);
+}
+.pk-x svg {
+  width: 15px;
+  height: 15px;
+}
+@media (hover: hover) and (pointer: fine) {
+  /* Без квадратче под хикса - само по-ярко и мъничко по-голямо. */
+  .pk-x:hover {
+    color: #B52A14;
+    transform: scale(1.14);
+  }
+}
+/* Има ли поръчка, картата „изглед от" отпада: тя криеше общата сума, а
+   изгледът вече е на всеки ред поотделно. Остава само когато нищо не е
+   избрано - тогава показва сектора, който човекът разглежда. */
+.sidebar-body:has(.pk-card) #seatview {
+  display: none;
+}
+.pk-total {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 14px 12px;
+  border-top: 1px solid var(--line-2);
+  background: var(--card-2);
+}
+.pk-total-k {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.pk-total-v {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.seatview {
+  flex: 0 0 auto;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.sv-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 30px 26px 32px;
+}
+.sv-empty-icon {
+  width: 58px;
+  height: 58px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.sv-empty-icon svg {
+  width: 30px;
+  height: 30px;
+}
+.sv-empty-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+.sv-empty-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-width: 300px;
+}
+/* Без снимка празната кутия не носи информация - само заема място. */
+.seatview.is-nophoto .sv-media {
+  display: none;
+}
+.sv-media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--card-3);
+}
+.sv-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sv-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  /* Върху снимка: тъмносин тинт с бял текст, за да се чете на всяка снимка. */
+  background: rgba(11, 27, 58, .72);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.sv-nophoto {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  background: radial-gradient(120% 90% at 50% 0%, var(--card-2), var(--card-3) 70%);
+}
+.sv-nophoto svg {
+  width: 26px;
+  height: 26px;
+  opacity: 0.7;
+}
+.sv-body {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 14px 16px 16px;
+}
+.sv-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.sv-kicker {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.sv-name {
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+}
+.sv-sub {
+  margin-top: 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.sv-price {
+  text-align: right;
+  white-space: nowrap;
+}
+.sv-amount {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.sv-from {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-soft);
+  margin-right: 3px;
+}
+.sv-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.sv-meta-note {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.sv-fees-note {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  margin-top: -4px;
+}
+.sv-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: rgba(245, 165, 36, .12);
+  border: 1px solid rgba(245, 165, 36, .38);
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.sv-note-icon {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--brand-red);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+.btn-360 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  padding: 12px 16px;
+  /* Второстепенно действие: бяло със сини детайли, за да остане "Купи билети"
+     единственият плътно син бутон в панела. */
+  border: 1px solid var(--accent-ring);
+  border-radius: var(--radius-sm);
+  background: var(--card-2);
+  color: var(--accent-2);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(29, 90, 208, .16);
+  transition:
+    transform var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) ease,
+    filter var(--dur-press) ease;
+}
+.btn-buy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px 16px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(29, 90, 208, .42);
+  transition:
+    transform var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-buy:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(29, 90, 208, .48);
+  }
+}
+.rec-tier-per {
+  margin-left: 6px;
+  color: var(--ink-soft);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.btn-360 svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-360:hover:not(:disabled) {
+    filter: brightness(1.07);
+    transform: translateY(-1px);
+    box-shadow: 0 9px 22px rgba(29, 90, 208, .5);
+  }
+}
+.btn-360:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(29, 90, 208, .38);
+}
+.btn-360:disabled {
+  background: var(--card-2);
+  color: var(--ink-faint);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.listings-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 2px 4px 0;
+}
+.listings-head h2 {
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.listings-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+.listings {
+  flex: 0 0 auto;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 2px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+.listings::-webkit-scrollbar {
+  width: 8px;
+}
+.listings::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 8px;
+}
+.listings::-webkit-scrollbar-track {
+  background: transparent;
+}
+.listing-row {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-align: left;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow 0.12s ease,
+    border-color 0.12s ease,
+    background-color 0.12s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .listing-row:hover {
+    border-color: var(--accent-ring);
+    box-shadow: var(--shadow-card);
+    transform: translateY(-1px);
+  }
+}
+.listing-row.is-selected {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 0 0 1px var(--accent),
+    0 6px 18px var(--accent-ring);
+}
+.listing-row.is-selected:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--accent);
+}
+.lr-name {
+  font-weight: 650;
+  white-space: nowrap;
+}
+.lr-price {
+  margin-left: auto;
+  white-space: nowrap;
+  font-weight: 750;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.lr-from {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--ink-soft);
+  margin-right: 2px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+}
+.filters {
+  flex: 0 0 auto;
+}
+.filters-head,
+.recs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px 0;
+}
+.filters-head h2,
+.recs-head h2 {
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 2px 2px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  background: var(--card-2);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow 0.12s ease,
+    border-color 0.12s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .chip:hover {
+    transform: translateY(-1px);
+  }
+}
+.chip.is-active {
+  border-color: var(--line-2);
+  box-shadow: var(--shadow-card);
+}
+.chip-all {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.chip-all.is-active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.party {
+  flex: 0 0 auto;
+}
+.party-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+}
+.party-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--ink-soft);
+}
+.party-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.party-step {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .party-step:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent-ring);
+  }
+}
+.party-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 750;
+  color: var(--ink);
+  padding: 6px 4px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  -moz-appearance: textfield;
+}
+.party-input::-webkit-outer-spin-button,
+.party-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.party-find-btn {
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 5px 14px rgba(29, 90, 208, .34);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow 0.12s ease,
+    filter 0.12s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .party-find-btn:hover {
+    filter: brightness(1.06);
+    transform: translateY(-1px);
+  }
+}
+.party-find-btn:active {
+  transform: translateY(0);
+}
+.recs {
+  flex: 0 0 auto;
+}
+.block-title {
+  flex: 0 0 auto;
+  padding: 2px 4px 0;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+/* Препоръките са падащо меню, за да не бутат избраното надолу */
+.recs-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+@media (hover: hover) and (pointer: fine) {
+  .recs-toggle:hover {
+    border-color: var(--accent-ring);
+  }
+}
+.recs-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+.recs-toggle .sectors-toggle-chevron {
+  margin-left: 2px;
+}
+.recs-toggle.is-open .sectors-toggle-chevron {
+  transform: rotate(-135deg) translate(-2px, -2px);
+}
+/* Значки: само водачът във всяка категория я получава */
+.rec-deal {
+  position: absolute;
+  top: -9px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px #0b1b3a33;
+}
+.rec-deal-icon {
+  font-size: 11px;
+  line-height: 1;
+}
+.rec-deal.is-top {
+  background: linear-gradient(135deg, #F5A524, #D98A0F);
+  color: var(--ink);
+}
+.rec-deal.is-cheap {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: #fff;
+}
+.rec-deal.is-view {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+}
+.rec-card.is-top {
+  border-color: var(--brand-red);
+  box-shadow:
+    0 0 0 1px rgba(245, 165, 36, .4),
+    var(--shadow-card);
+}
+.rec-card.is-cheap {
+  border-color: #6cc48d;
+}
+.rec-card.is-top .rec-deal,
+.rec-card.is-cheap .rec-deal,
+.rec-card.is-view .rec-deal {
+  z-index: 1;
+}
+.rec-card.has-badge .rec-deal {
+  left: 10px;
+}
+.recs-clear {
+  border: 0;
+  background: none;
+  padding: 2px 4px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .recs-clear:hover {
+    text-decoration: underline;
+  }
+}
+.recs-empty {
+  padding: 12px 4px 4px;
+}
+.recs-empty-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.recs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 2px 4px;
+}
+.recs-list::-webkit-scrollbar {
+  width: 8px;
+}
+.recs-list::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 8px;
+}
+.recs-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.rec-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-align: left;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow 0.12s ease,
+    border-color 0.12s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .rec-card:hover {
+    border-color: var(--accent-ring);
+    box-shadow: var(--shadow-card);
+    transform: translateY(-1px);
+  }
+}
+.rec-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rec-card-title {
+  font-weight: 700;
+  font-size: 13px;
+}
+.rec-card-view {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.rec-card-mid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rec-card-seats {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.rec-tier-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.rec-tier-sep {
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+.rec-pill {
+  font-size: 10px;
+  padding: 2px 8px;
+}
+.rec-card-bottom {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rec-card-total {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.rec-card-avg {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+#map,
+.map-pane {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  /* лека светлина откъм сцената, за да не е плоско бяло */
+  background: radial-gradient(110% 100% at 50% 0%, #F5F7FB, #EEF2F8);
+}
+#map .maplibregl-map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font);
+}
+#map .maplibregl-canvas-container,
+#map .maplibregl-canvas {
+  width: 100%;
+  height: 100%;
+}
+#map .maplibregl-canvas {
+  outline: none;
+}
+#map .seat-tip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  min-width: 128px;
+  padding: 8px 11px 9px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.3;
+  box-shadow: var(--shadow-pop);
+  white-space: nowrap;
+}
+#map .seat-tip-sec {
+  font-weight: 700;
+  font-size: 12.5px;
+}
+#map .seat-tip-pos {
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+#map .seat-tip-warn {
+  /* тъмен кехлибар: светлият #F5A524 върху бяло пада под 2:1 */
+  color: #7A4A00;
+}
+#map .seat-tip-price {
+  font-weight: 800;
+  font-size: 14px;
+  margin-top: 5px;
+}
+#map .maplibregl-ctrl-attrib {
+  font-size: 10px;
+  background: rgba(255, 255, 255, .82);
+  color: var(--ink-soft);
+}
+#map .maplibregl-ctrl-group {
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+}
+.filterbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
+  z-index: 4;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.seatview {
+  scroll-margin-top: 62px;
+}
+.fb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  /* Никаква начертана рамка: обемът идва от белия тинт и от светлината, която
+     ляга по горния ръб - както по извито стъкло. Плътен контур го прави стикер. */
+  border: 1px solid transparent;
+  background: var(--glass-sheen), var(--glass-tint);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--glass-edge);
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease,
+    transform var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .fb-pill:hover {
+    transform: translateY(-1px);
+  }
+}
+.fb-pill.is-active {
+  background: linear-gradient(180deg, #ffffff33, #ffffff00), var(--accent);
+  border-color: transparent;
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 #ffffff5c,
+    0 6px 18px var(--accent-ring);
+}
+/* "Разгледани" живее в менюто ⚙ - иначе хапчетата не се събират на един ред */
+.fb-pill-viewed {
+  display: none;
+}
+.fb-pill-icon {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+}
+.fb-pill-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.viewedlist {
+  display: none;
+  flex: 0 0 auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  padding: 10px 12px 12px;
+}
+.viewedlist.is-open {
+  display: block;
+}
+.viewedlist-head h2 {
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.viewedlist-empty {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  padding: 8px 2px 2px;
+}
+.viewedlist-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.viewedlist-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    transform var(--dur-press) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .viewedlist-row:hover {
+    border-color: var(--accent-ring);
+  }
+}
+.vl-price {
+  color: var(--ink-soft);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-viewed {
+  position: absolute;
+  top: -7px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px #0b1b3a40;
+}
+.popover-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 60;
+}
+.popover {
+  position: fixed;
+  z-index: 61;
+  min-width: 260px;
+  /* На 320px списъкът с цената опираше в десния ръб: широчината му се дърпа
+     от екрана, за да остане отстъп и от двете страни. */
+  max-width: min(320px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-pop);
+  /* Нищо в света не изниква от нищото: 0.96, не 0. Началото се долепя до
+     хапчето, което го е отворило - иначе списъкът расте от центъра си и
+     връзката с бутона се губи. Точката се задава от ui.js. */
+  transform-origin: 50% 0;
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity var(--dur-menu) var(--ease-out),
+    transform var(--dur-menu) var(--ease-out);
+}
+.popover[data-open] {
+  opacity: 1;
+  transform: none;
+}
+/* Затварянето е по-бързо от отварянето: системата отговаря, човек не решава. */
+.popover:not([data-open]) {
+  transition-duration: 0.11s;
+}
+.popover-title {
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.qty-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.qty-option {
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    transform var(--dur-press) var(--ease-out);
+}
+.qty-option.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.qty-grid {
+  display: grid;
+  /* Два реда по пет: целият избор се вижда наведнъж, без трети ред с две
+     самотни бройки. */
+  /* minmax(0,...), не голо 1fr: `1fr` е `minmax(auto, 1fr)`, а min-content на
+     бутон с aspect-ratio и min-height е височината, умножена по съотношението
+     (44 x 1.3 = 57.2px). Пет такива колони не се свиваха и решетката излизаше
+     20px извън балончето, а на 320px - 44px. */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+/* Без aspect-ratio нарочно. Кутия със съотношение и определена височина не
+   се разтяга по колоната: подравняването „stretch" отпада и ширината се смята
+   от височината (44 x 1.3 = 57.2px). Затова бутоните излизаха 20px извън
+   балончето, а на 320px - 44px. Височината се задава направо, ширината идва
+   от колоната. */
+.qty-num {
+  min-height: 44px;
+  min-width: 0;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .qty-num:hover {
+    border-color: var(--accent-ring);
+  }
+}
+.qty-num.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+/* Балончето с бройките взима цялата позволена ширина. Иначе, откакто
+   решетката вече не му налага размер, то се свиваше до най-малкото си и
+   квадратчетата ставаха тесни за пръст. */
+.popover-qty {
+  width: min(320px, calc(100vw - 24px));
+}
+.popover-tiers {
+  max-width: 300px;
+}
+/* Сгъваем списък с всички сектори - стои най-долу, за да не разсейва */
+.sectors {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+.sectors-toggle {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sectors-toggle:hover {
+    border-color: var(--accent-ring);
+  }
+}
+.sectors-toggle .listings-count {
+  margin-left: auto;
+  font-weight: 600;
+}
+.sectors-toggle-chevron {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-left: 2px;
+  border-right: 2px solid var(--ink-faint);
+  border-bottom: 2px solid var(--ink-faint);
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform var(--dur-press) var(--ease-out);
+}
+.sectors-toggle.is-open .sectors-toggle-chevron {
+  transform: rotate(-135deg) translate(-2px, -2px);
+}
+.sectors .listings {
+  padding-top: 8px;
+}
+/* Предупреждения над картата. Стоят в общия долен стълб, затова тук няма
+   собствено позициониране: така съобщение на два реда бута бутона нагоре,
+   вместо да се качва върху него. */
+.toast {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 520px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+  box-shadow: var(--shadow-pop);
+}
+.toast-quiet {
+  max-width: none;
+  width: max-content;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 650;
+  color: #153D8A;
+  background: rgba(255, 255, 255, .94);
+  border-color: rgba(11, 27, 58, .14);
+  pointer-events: none;
+}
+.toast-warn {
+  background: #FCE7BD;
+  border-color: rgba(245, 165, 36, .6);
+}
+.toast-icon {
+  flex: none;
+  width: 19px;
+  height: 19px;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(11, 27, 58, .10);
+  font-size: 12px;
+  font-weight: 800;
+}
+/* Основата е 0, а не „auto": иначе текстът заявява цялото си изречение като
+   начална ширина, редът прелива и кръстчето пада отдолу само. С основа 0
+   текстът първо получава реда, а после расте с останалото място. */
+.toast-text {
+  flex: 1 1 0;
+  min-width: 0;
+}
+/* Всяко предупреждение носи изход. Бутонът е за пръст, затова 44px, а на
+   телефон сяда на свой ред - иначе текстът се сплесква в две думи на ред. */
+.toast-action {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* Вторият изход е другият честен избор, не същото предложение: носи се като
+   контур, за да не се борят два плътни бутона за окото. */
+.toast-action--vtori {
+  background: rgba(255, 255, 255, .9);
+  border: 1px solid rgba(11, 27, 58, .22);
+  color: var(--ink);
+}
+.toast-action:active {
+  transform: scale(.97);
+}
+.toast-action:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .toast-action--vtori:hover {
+    background: #fff;
+    border-color: rgba(11, 27, 58, .38);
+  }
+}
+@media (max-width: 560px) {
+  .toast-close {
+    order: 3;
+  }
+  .toast-action {
+    order: 4;
+    flex: 1 0 100%;
+    align-self: stretch;
+  }
+}
+.toast-close {
+  flex: none;
+  /* Кръстчето беше 15x19 и сиво: с пръст се уцелва трудно, а до него е
+     схемата - пропускът затваря сектор. Полето за допир е 44px и се прибира
+     с отрицателен отстъп, за да не разтяга реда. Червено е като хикса в
+     листа: там маха място, тук маха съобщението, значи е един и същи жест. */
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -12px -12px -12px 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  padding: 0 2px;
+  color: #D4351C;
+  font-size: 23px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color var(--dur-press) ease,
+    transform var(--dur-press) var(--ease-out);
+}
+.toast-close:active {
+  transform: scale(.9);
+}
+.toast-close:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .toast-close:hover {
+    color: #B52A14;
+    transform: scale(1.14);
+  }
+}
+.popover-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.btn-secondary,
+.btn-primary {
+  border-radius: 9px;
+  padding: 9px 14px;
+  font-size: 12.5px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.btn-secondary {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+}
+.btn-primary {
+  border: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(29, 90, 208, .34);
+}
+.price-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.range-slider {
+  position: relative;
+  height: 26px;
+  margin: 6px 2px 0;
+}
+.range-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: var(--line-2);
+}
+.range-highlight {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.range-input {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: none;
+}
+.range-input::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  background: transparent;
+  height: 26px;
+}
+.range-input::-moz-range-track {
+  background: transparent;
+  height: 26px;
+  border: 0;
+}
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent);
+  box-shadow: 0 1px 3px #0b1b3a40;
+  cursor: pointer;
+}
+.range-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent);
+  box-shadow: 0 1px 3px #0b1b3a40;
+  cursor: pointer;
+}
+.price-inputs {
+  display: flex;
+  gap: 10px;
+}
+.price-input-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.price-input-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.price-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink);
+  -moz-appearance: textfield;
+}
+.price-input::-webkit-outer-spin-button,
+.price-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+}
+.toggle-label {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink);
+}
+.toggle-switch {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+.toggle-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--line-2);
+  transition: background-color 0.15s ease;
+}
+.toggle-slider:before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px #0b1b3a4d;
+  transition: transform var(--dur-press) var(--ease-out);
+}
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--accent);
+}
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translate(18px);
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(11, 27, 58, .45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+/* На 320x568 картата ставаше 651px висока и излизаше извън екрана: бутонът
+   „Изберете най-добрите N места" оставаше извън кадъра, без скрол - портата
+   ставаше задънена улица. Сега се свива до екрана и се скролва вътре. */
+.modal-overlay {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.modal-card.has-more {
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 30px), transparent);
+  mask-image: linear-gradient(#000 calc(100% - 30px), transparent);
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow-pop);
+}
+/* Диалогът при вход е обикновена карта върху затъмнен фон - схемата на залата
+   остава видима отзад, вместо да се закрива цялата страница. */
+.gate-overlay {
+  background: rgba(11, 27, 58, .38);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.gate-card {
+  position: relative;
+  max-width: 460px;
+  padding: 22px 24px 24px;
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow-pop);
+  color: var(--ink);
+}
+.gate-step {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+.gate-back {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  border: 0;
+  background: none;
+  padding: 4px 6px;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .gate-back:hover {
+    text-decoration: underline;
+  }
+}
+.gate-title {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 6px;
+}
+.gate-sub {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-bottom: 18px;
+}
+.gate-grid {
+  display: grid;
+  /* Десетте броя лягат на два реда по пет. С четири на ред оставаше самотен
+     трети ред от два бутона: панелът изглеждаше недовършен и ставаше висок
+     без причина. */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  /* Отдолу веднага идват двата бутона със свой отстъп: сборът от два големи
+     отстъпа отваряше празна ивица по средата на панела. */
+  margin-bottom: 4px;
+}
+/* Виж бележката при .qty-num: съотношение + определена височина изяжда
+   разтягането по колоната. Тук височината също е права. */
+.gate-num {
+  min-height: 50px;
+  min-width: 0;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    transform var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .gate-num:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent-ring);
+  }
+}
+.gate-num.is-active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(29, 90, 208, .42);
+}
+.gate-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.gate-chip {
+  position: relative;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  background: var(--chip-color, var(--card-2));
+  color: #1a1a22;
+  font-size: 12.5px;
+  font-weight: 750;
+  cursor: pointer;
+  opacity: 0.42;
+  transition:
+    opacity 0.12s ease,
+    border-color 0.12s ease,
+    transform var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .gate-chip:hover {
+    transform: translateY(-1px);
+    opacity: 0.75;
+  }
+}
+.gate-chip.is-active {
+  opacity: 1;
+  border-color: var(--line-2);
+  box-shadow: var(--shadow-card);
+}
+.gate-chip-all {
+  background: var(--card);
+  border-color: var(--line);
+  color: var(--ink);
+  opacity: 1;
+}
+.gate-chip-all.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+/* Масите в портата: отделен ред, не осмо хапче. Цените им са 255-640 € на
+   място срещу 20-75 € за място в залата - на обща скала слайдерът става
+   безполезен, а всяка маса изглежда еднакво скъпа. */
+.gate-tables {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e9f4;
+}
+.gate-tables__btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 62px;
+  padding: 10px 14px;
+  border: 1px solid #d9cdf0;
+  border-radius: 16px;
+  background: #faf7ff;
+  color: #2f2148;
+  text-align: left;
+  cursor: pointer;
+}
+.gate-tables__ramp {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 3px;
+}
+.gate-tables__ramp i {
+  width: 9px;
+  height: 28px;
+  border-radius: 4px;
+}
+.gate-tables__txt {
+  min-width: 0;
+}
+.gate-tables__txt b {
+  display: block;
+  font: 750 14px/1.25 system-ui;
+}
+.gate-tables__txt i {
+  display: block;
+  margin-top: 2px;
+  font: 550 12px/1.3 system-ui;
+  font-style: normal;
+  color: #5b4a7d;
+}
+.gate-tables__go {
+  margin-left: auto;
+  font-size: 19px;
+  color: #6b4bab;
+}
+@media (hover: hover) and (pointer: fine) {
+  .gate-tables__btn:hover {
+    border-color: #b9a2e6;
+    background: #f3ecff;
+  }
+}
+.gate-tables__btn:active {
+  background: #ece1ff;
+}
+.gate-tables__btn:focus-visible {
+  outline: 3px solid #6b4bab;
+  outline-offset: 2px;
+}
+@media (max-width: 380px) {
+  /* На тесен екран хапчетата се свиват, за да остане бутонът в кадър. */
+  .gate-chip {
+    min-height: 48px;
+    padding: 8px 13px;
+    font-size: 13px;
+  }
+  .gate-tables {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+  .gate-tables__btn {
+    gap: 9px;
+    min-height: 54px;
+    padding: 8px 10px;
+  }
+  .gate-tables__ramp i {
+    width: 7px;
+    height: 22px;
+  }
+  .gate-tables__go {
+    display: none;
+  }
+  .gate-tables__txt b {
+    font-size: 13px;
+  }
+  .gate-tables__txt i {
+    font-size: 11px;
+  }
+}
+.gate-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 14px 0 4px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  background: rgba(245, 165, 36, .12);
+  border: 1px solid rgba(245, 165, 36, .38);
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.gate-warn-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--brand-red);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+.gate-continue {
+  width: 100%;
+  margin-top: 16px;
+  padding: 13px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 15px;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(29, 90, 208, .42);
+}
+.gate-continue:disabled {
+  background: var(--card-2);
+  color: var(--ink-faint);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+/* Вторият път беше просто ред текст под бутона: не личеше, че се натиска,
+   и хората минаваха през препоръките, без да знаят, че имат избор. Сега е
+   бутон с кант - другият избор, но не същият по тежест като „Напред". */
+.gate-skip {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  padding: 12px 16px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    transform var(--dur-fast) var(--ease-out);
+}
+.gate-skip:active {
+  transform: scale(0.98);
+}
+.gate-skip:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Тесен екран: пет на ред се побират само ако полето и отстъпите се стегнат.
+   Целта е бутонът да не пада под 44px, а не да изглежда по-нежно. */
+@media (max-width: 380px) {
+  .gate-card {
+    padding: 20px 16px 20px;
+  }
+  .gate-grid {
+    gap: 6px;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .gate-skip:hover {
+    background: var(--card-2);
+    border-color: var(--accent-ring);
+  }
+}
+.af-card {
+  max-width: 440px;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+}
+.af-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.af-head h2 {
+  font-size: 16px;
+  font-weight: 800;
+}
+.af-close {
+  border: 0;
+  background: none;
+  padding: 2px 6px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.af-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px;
+}
+.af-section-title {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.af-qty-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+.af-qty-btn {
+  min-height: 44px;
+  min-width: 0;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.af-qty-btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.af-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.af-hint {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.af-footer {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+}
+.af-footer .btn-secondary,
+.af-footer .btn-primary {
+  flex: 1 1 0;
+  text-align: center;
+}
+@media (max-width: 1100px) {
+  .event-title {
+    font-size: 14px;
+  }
+}
+@media (max-width: 900px) {
+  .topbar {
+    gap: 14px;
+    padding: 0 16px;
+  }
+  .live-chip {
+    display: none;
+  }
+  .sidebar-body {
+    padding: 4px 10px 0;
+  }
+  .sv-name {
+    font-size: 17px;
+  }
+  .sv-amount {
+    font-size: 20px;
+  }
+}
+@media (max-width: 880px) {
+  /* Панелът е ЕДНО ЦЯЛО и се вдига над картата, вместо да си скролва
+     съдържанието в отрязана колона. Височината се управлява от --sheet-h;
+     spiritkite са три: само дръжката, половин екран и почти цял. */
+  .workspace {
+    position: relative;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+  /* Селекторът е с #map нарочно: базовото правило е „#map, .map-pane" и
+     носи специфичност на ID - клас сам не може да го надвие. */
+  #map.map-pane {
+    order: -1;
+    min-height: 0;
+    /* Кадърът на картата е ВИДИМАТА зона над листа в най-ниското му
+       положение. Иначе fitBounds центрира залата в цялата площ и тя увисва
+       нагоре, наполовина под хедъра, с празнина отдолу. */
+    height: calc(100% - var(--sheet-peek, 96px));
+  }
+  .sidebar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    height: var(--sheet-h, 52%);
+    max-height: 88%;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    border-left: 0;
+    border-top: 1px solid var(--line-2);
+    border-radius: 20px 20px 0 0;
+    background: var(--card);
+    box-shadow: 0 -18px 44px rgba(11, 27, 58, .28);
+  }
+  .sidebar.is-dragging {
+    transition: none;
+  }
+  .sidebar:not(.is-dragging) {
+    transition: height var(--dur-sheet) var(--ease-drawer);
+  }
+  .sheet-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 100%;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+  }
+  .sheet-handle:active {
+    cursor: grabbing;
+  }
+  .sheet-grip {
+    display: block;
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--line-2);
+  }
+  .sheet-handle:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: -4px;
+    border-radius: 20px 20px 0 0;
+  }
+  /* Ценовите категории се преместиха над картата (.map-rail), затова блокът
+     им в панела не се показва - иначе същите хапчета щяха да са на две места. */
+  .sidebar .filters {
+    display: none;
+  }
+  /* Лентата над залата. Горе бутоните, които отварят меню („Брой", „Цена"),
+     под тях категориите с един клик. Докато панелът е затворен, това е
+     единственото място, където изобщо се виждат - затова са тук, не в него. */
+  .map-rail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 8;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 8px 12px 14px;
+    background: linear-gradient(#f7f9fdf7 56%, #f7f9fd00);
+    /* Само хапчетата хващат пръста: иначе горната ивица от схемата не се влачи. */
+    pointer-events: none;
+  }
+  .map-rail[hidden],
+  .map-rail__pills[hidden],
+  .map-rail__chips[hidden] {
+    display: none;
+  }
+  .map-rail__pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-self: flex-start;
+    /* Мястото на зума горе вдясно се пази: хапче, което влезе под него, не
+       може да се натисне. Появи ли се четвърто, редът се пренася. */
+    max-width: calc(100% - 70px);
+    gap: 8px;
+    pointer-events: auto;
+  }
+  /* Върху схемата стъклото не се чете: тук хапчетата са плътни, с кант и сянка. */
+  .map-rail .fb-pill {
+    min-height: 44px;
+    padding: 8px 15px;
+    border-color: #b6cdf3;
+    background: #fff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    color: #143a80;
+    font-size: 13.5px;
+    box-shadow: 0 10px 26px rgba(20, 46, 84, 0.18);
+  }
+  .map-rail .fb-pill.is-active {
+    border-color: transparent;
+    background: linear-gradient(180deg, #ffffff33, #ffffff00), var(--accent);
+    color: #fff;
+  }
+  .map-rail .fb-pill-icon {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+  /* Листът с категориите: вика се с бутон, заема екран само докато избираш.
+     Постоянната лента с хапчета режеше от схемата и пак не ги показваше
+     всичките - тук са наведнъж, с цвета си, и всяко е цел за пръст. */
+  .tier-sheet {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+  }
+  .tier-sheet[hidden] {
+    display: none;
+  }
+  .tier-sheet__veil {
+    position: absolute;
+    inset: 0;
+    background: #10204047;
+  }
+  .tier-sheet__card {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    padding: 14px 14px 12px;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 18px 50px #10204047;
+    transition: transform 220ms ease-out;
+  }
+  .tier-sheet__card.is-dragging {
+    transition: none;
+  }
+  /* Дръжка-стрелка на цялата ширина: тап затваря, дърпането надолу също. */
+  .tier-sheet__grip {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: calc(100% + 28px);
+    min-height: 34px;
+    margin: -10px -14px 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #153D8A;
+    cursor: grab;
+    touch-action: none;
+  }
+  .tier-sheet__grip svg {
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .tier-sheet__grip:focus-visible {
+    outline: 2px solid var(--accent-ring);
+    outline-offset: -2px;
+    border-radius: 12px;
+  }
+  .tier-sheet__head {
+    margin: 0 0 10px;
+    font: 750 15px/1.25 system-ui;
+    color: #153873;
+  }
+  /* Плъзгачът за цена стои най-отгоре и води: под него категориите само
+     следват какво е избрано. Затова втори надпис ги отделя, вместо да висят
+     точно под дръжката. */
+  .tier-sheet__price {
+    margin: 0 0 4px;
+  }
+  .tier-sheet__head--2 {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(11, 27, 58, .1);
+  }
+  /* Цените на ЕДИН ред, винаги. Всеки чип взима равен дял, а „Всички" -
+     колкото му е надписът, защото е двойно по-дълъг от „20 €". Пренасяне няма:
+     при пренасяне последният чип оставаше сам и се разтягаше на цял ред. При
+     много категории на тесен телефон редът се плъзга настрани - и там буквите
+     не се режат, защото долната граница на чипа е самият надпис. */
+  .tier-sheet .chip-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    margin: -4px 0 0;
+    /* Отвесното поле връща сянката на избрания чип, която overflow-ът реже. */
+    padding: 4px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .tier-sheet .chip-row::-webkit-scrollbar {
+    display: none;
+  }
+  /* Под 44px са, защото Стефан ги поиска малки два пъти. Стоят в лист с много
+     въздух около себе си и се уцелват, но това е под общоприетия праг. */
+  .tier-sheet .chip {
+    flex: 1 1 0;
+    width: auto;
+    min-width: min-content;
+    min-height: 36px;
+    padding: 4px 5px;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 12.5px;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+  /* „Всички" не дели поравно: взима колкото е надписът и оставя останалото на
+     цените, иначе то е тясно, а те - широки. */
+  .tier-sheet .chip-all {
+    flex: 0 0 auto;
+    padding-inline: 9px;
+  }
+  /* Осемте цени не се събират на един ред с едър шрифт под 430px - оттам
+     надолу буквите слизат едно стъпало, вместо редът да се плъзга. */
+  @media (max-width: 430px) {
+    .tier-sheet .chip {
+      padding: 4px 3px;
+      font-size: 11.5px;
+    }
+    .tier-sheet .chip-all {
+      padding-inline: 7px;
+    }
+  }
+  /* На най-тесните телефони още едно стъпало: иначе последната цена остава
+     зад ръба и трябва да се плъзга за нея. */
+  @media (max-width: 340px) {
+    .tier-sheet .chip {
+      padding: 4px 2px;
+      gap: 0;
+    }
+    .tier-sheet .chip-row {
+      gap: 3px;
+    }
+  }
+  .tier-sheet__ramp {
+    display: grid;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+    gap: 4px;
+  }
+  /* Цветните полета вече водят до масите от тази категория, затова са
+     бутони, а не просто мостри. */
+  .tier-sheet__ramp button {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    min-height: 44px;
+    padding: 5px 2px;
+    border: 0;
+    border-radius: 10px;
+    font: inherit;
+    color: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    transition: transform var(--dur-press) var(--ease-out);
+  }
+  .tier-sheet__ramp button:active {
+    transform: scale(.96);
+  }
+  .tier-sheet__ramp button:focus-visible {
+    outline: 3px solid var(--accent-ring);
+    outline-offset: 2px;
+  }
+  .tier-sheet__ramp i {
+    padding: 2px 7px;
+    border-radius: 7px;
+    background: #ffffffe8;
+    font: 700 11.5px/1.25 system-ui;
+    font-style: normal;
+    /* Същото мастило като в балончетата на схемата - цветовете на масите са
+       оригиналните от сайта, а не лилавата гама, за която беше лилавото. */
+    color: #0b1b3a;
+  }
+  /* Факт, не бележка под линия: цената на място се чете наравно с числата в
+     квадратчетата отгоре. */
+  .tier-sheet__note {
+    margin: 7px 0 0;
+    font: 700 12.5px/1.3 system-ui;
+    color: #2e4675;
+  }
+  .tier-sheet__ok {
+    width: 100%;
+    min-height: 50px;
+    margin-top: 12px;
+    border: 0;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #2466d7, #17428c);
+    color: #fff;
+    font: 700 15px system-ui;
+    cursor: pointer;
+  }
+  /* Зумът отива горе вдясно, на реда на хапчетата. Под тях той беше трети
+     пласт отгоре и изяждаше още 100px от схемата, а се пипа рядко - на телефон
+     се приближава с пръсти. Десният ъгъл е празен и точно негов. */
+  #map .maplibregl-ctrl-top-left {
+    top: 8px;
+    left: auto;
+    right: 12px;
+    /* Над лентата: нейният бял градиент е почти непрозрачен горе и измиваше
+       „+" до 1.15:1 контраст - бутонът изглеждаше празен, а „−" под ръба ѝ
+       беше нормален. */
+    z-index: 9;
+  }
+  /* Отстъпът на MapLibre се маха, за да се мери мястото точно: иначе групата
+     влиза под хапчетата на 320px. */
+  #map .maplibregl-ctrl-top-left .maplibregl-ctrl {
+    margin: 0;
+  }
+  /* Долу листът е само дръжка и филтри - и двете си остават кликаеми. Скрол
+     вътре няма, за да не се борят два скрола: листът се вдига с дръжката. */
+  .sidebar:not(.is-open) .sidebar-body {
+    overflow: hidden;
+  }
+  .filterbar {
+    position: relative;
+    z-index: 1;
+  }
+  /* Последното хапче да се доскролва изцяло, вместо да е отрязано на ръба. */
+  .topbar {
+    height: 52px;
+    padding: 0 12px;
+    gap: 10px;
+  }
+  .brand img {
+    height: 24px;
+  }
+  .event {
+    padding-left: 10px;
+  }
+  .event-title {
+    font-size: 13.5px;
+  }
+  .event-sub {
+    font-size: 11px;
+  }
+  .live-chip {
+    display: none;
+  }
+  .sidebar-body {
+    padding: 20px 10px 20px;
+    gap: 10px;
+    -webkit-mask-image: linear-gradient(#0000 0, #000 16px);
+    mask-image: linear-gradient(#0000 0, #000 16px);
+  }
+  /* Един ред, винаги. Дълъг етикет като „Цена · 31-63 €" пренасяше хапчетата
+     на втори ред и листът подскачаше на всяка промяна на филтър. */
+  .filterbar {
+    padding: 8px 10px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), #0000);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 24px), #0000);
+  }
+  .filterbar::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+  .fb-pill {
+    flex: 0 0 auto;
+    min-height: 40px;
+  }
+  .sv-media {
+    aspect-ratio: 21 / 9;
+  }
+  .sv-body {
+    padding: 10px 12px 12px;
+    gap: 8px;
+  }
+  .sv-name {
+    font-size: 16px;
+  }
+  .sv-amount {
+    font-size: 19px;
+  }
+  .btn-360 {
+    min-height: 44px;
+  }
+  .listing-row {
+    padding: 12px;
+    min-height: 48px;
+  }
+  .listing-row.is-selected:before {
+    display: none;
+  }
+  .party-step,
+  .qty-option,
+  .gate-num,
+  .fb-pill,
+  .chip {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .recs-list {
+    max-height: none;
+    overflow: visible;
+  }
+  #map .seat-tip {
+    display: none !important;
+  }
+  #map .maplibregl-ctrl-attrib {
+    font-size: 9px;
+  }
+}
+@media (max-width: 420px) {
+  /* Старото двуредово разпределение (карта отгоре, колона отдолу) го няма -
+     листът лежи ВЪРХУ картата. Оставено фиксирано, за да не се върне
+     наследеното 54svh, което режеше платното и залата увисваше нагоре. */
+  .workspace {
+    grid-template-rows: 1fr;
+  }
+  .map-pane {
+    min-height: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tier-sheet__card { transition: none; }
+  .live-dot {
+    animation: none;
+  }
+  .listing-row,
+  .btn-360,
+  .chip,
+  .rec-card,
+  .party-step,
+  .party-find-btn {
+    transition: none;
+  }
+  .fb-pill,
+  .gate-num,
+  .af-qty-btn,
+  .qty-option,
+  .toggle-slider,
+  .toggle-slider:before {
+    transition: none;
+  }
+}
+
+/* Бутоните за зум горе вляво: вдясно стояха под страничния панел. */
+.maplibregl-ctrl-top-left {
+  top: 12px;
+  left: 12px;
+}
+.maplibregl-ctrl-top-left .maplibregl-ctrl-group {
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+/* Обръщането на иконите остана от тъмната тема: върху светлия бутон правеше
+   „+" почти бял - 1.03:1 контраст, тоест бутонът изглеждаше празен. Иконите на
+   MapLibre се сменят с наши: същият син като в хапчетата и без изненади от
+   вендора (там „+" се рисуваше блед и без обръщането). Селекторът е дълъг,
+   защото вендорът пише `.maplibregl-ctrl button.maplibregl-ctrl-zoom-in ...`
+   и по-късото правило губеше по тежест - не заради ред във файла. */
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: none;
+  background-size: 22px 22px;
+}
+#map .maplibregl-ctrl button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%23143A80' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M12 6v12M6 12h12'/%3E%3C/svg%3E");
+}
+#map .maplibregl-ctrl button.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%23143A80' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E");
+}
+.maplibregl-ctrl-group button {
+  width: 44px;
+  height: 44px;
+}
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  transform: scale(1.15);
+}
+/* MapLibre слага `outline: none` на своите копчета с по-висока тежест от
+   общото ни правило, тоест фокусът им оставаше на нейния #0096ff. Тук пръстенът
+   се връща в нашия цвят; отстъпът е навътре, защото групата е с изрязани ъгли. */
+/* Самото платно също се хваща с Tab - MapLibre го пани със стрелките. Без
+   пръстен не личи, че фокусът е влязъл в картата. */
+#map .maplibregl-canvas:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: -3px;
+}
+#map .maplibregl-ctrl-group button:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: -3px;
+  box-shadow: none;
+}
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--line);
+}
+@media (hover: hover) and (pointer: fine) {
+  .maplibregl-ctrl-group button:hover:not(:disabled) {
+    background: var(--card-2);
+  }
+}
+.maplibregl-ctrl-group button:active:not(:disabled) {
+  background: var(--card-3);
+}
+/* Стигнат край на мащаба: бутонът трябва да личи, че вече не работи, иначе
+   човек го натиска пак и пак и решава, че е счупен. */
+.maplibregl-ctrl-group button:disabled {
+  cursor: default;
+  background: var(--card);
+}
+.maplibregl-ctrl-group button:disabled .maplibregl-ctrl-icon {
+  opacity: 0.3;
+}
+@media (max-width: 880px) {
+  .maplibregl-ctrl-top-right {
+    top: 8px;
+    right: 8px;
+  }
+  .maplibregl-ctrl-group button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* На тесен екран шапката пази името на събитието: подзаглавието отпада, а
+   логото и бутоните се смаляват. */
+@media (max-width: 560px) {
+  .event-sub {
+    display: none;
+  }
+  .brand img {
+    height: 20px;
+  }
+  .topbar {
+    gap: 8px;
+    padding: 0 10px;
+  }
+  .topbar-branding {
+    gap: 7px;
+  }
+  /* Не се връща в кръгче: думата е смисълът на бутона. Свива се вместо
+     това - по-малко поле и с една стъпка по-дребен надпис. */
+  .topbar-back {
+    height: 30px;
+    gap: 4px;
+    padding: 0 10px 0 8px;
+    font-size: 12.5px;
+  }
+  .topbar-back svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+/* Долният стълб на картата: бутонът за връщане отгоре, съобщенията отдолу.
+   Стълбът ги реди един под друг, затова не могат да се застъпят колкото и
+   редове да стане съобщението. */
+.map-stack {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 7;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  pointer-events: none;
+}
+.map-stack > * {
+  pointer-events: auto;
+}
+/* Съобщението застава точно върху блока с масите, а „изберете маса от блока"
+   не бива да значи „но не можеш да я натиснеш": допирът минава през текста,
+   ловят го само бутоните му. */
+.map-stack > .toast {
+  pointer-events: none;
+}
+.toast-close,
+.toast-action {
+  pointer-events: auto;
+}
+/* Връщане към началния изглед направо от схемата. */
+.map-reset {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card-2);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+.map-reset svg {
+  width: 16px;
+  height: 16px;
+  /* Синьо, не червено: бутонът вече само връща изгледа и нищо не изтрива. */
+  color: var(--accent-2);
+}
+@media (hover: hover) and (pointer: fine) {
+  .map-reset:hover {
+    background: var(--card-2);
+    border-color: var(--line-2);
+  }
+}
+.map-reset[hidden] {
+  display: none;
+}
+.map-actions {
+  display: flex;
+  align-items: stretch;
+  gap: clamp(10px, .7vw, 18px);
+  max-width: 100%;
+}
+.map-preview {
+  display: none;
+}
+@media (min-width: 881px) {
+  .map-stack {
+    /* Center the actions in the usable map area, clear of the ticket panel. */
+    left: 0;
+    width: calc(100% - clamp(320px, 30vw, 400px));
+    max-width: none;
+    transform: none;
+    bottom: clamp(22px, 1.5vw, 48px);
+  }
+  .map-actions .map-reset {
+    justify-content: center;
+    flex: 0 0 auto;
+    width: clamp(196px, 14vw, 440px);
+    min-height: clamp(48px, 3.4vw, 104px);
+    padding: .7em 1.1em;
+    gap: .6em;
+    font-size: clamp(15px, 1.05vw, 30px);
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+  .map-actions .map-reset svg {
+    flex: 0 0 auto;
+    width: 1.35em;
+    height: 1.35em;
+  }
+  .map-reset.map-preview {
+    display: flex;
+    color: #fff;
+    background: var(--accent-2);
+    border-color: var(--accent-2);
+  }
+  .map-preview svg {
+    color: inherit;
+  }
+  .map-preview[hidden] {
+    display: none;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .map-preview:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+  }
+}
+@media (max-width: 880px) {
+  .map-stack {
+    /* По средата долу, над листа. „Цялата зала" е бягство от загубен изглед:
+       в ъгъла окото го подминава, а по средата е точно там, където палецът
+       вече чака. С листа се вдига плавно, вместо да прескача. */
+    top: auto;
+    /* Вдигнатият лист не бива да я изхвърля над лентата: горната граница е
+       точно под нея. */
+    bottom: min(calc(var(--sheet-h, 143px) + 12px), calc(100% - var(--rail-h, 66px) - 56px));
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    align-items: center;
+    max-width: calc(100% - 24px);
+    transition: bottom .18s ease-out;
+    gap: 8px;
+  }
+  /* Под пръста преход няма: иначе лентата пълзи след листа и изостава. */
+  .workspace.is-dragging .map-stack {
+    transition: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .map-stack {
+      transition: none;
+    }
+  }
+  /* Бял бутон върху почти бяла схема не се забелязва: синя плочка, син кант
+     и по-плътна сянка го отделят от залата, без да спори с „Продължете". */
+  .map-reset {
+    padding: 11px 18px;
+    font-size: 13.5px;
+    border-color: #b6cdf3;
+    background: #edf3ff;
+    color: #143a80;
+    box-shadow: 0 10px 26px rgba(20, 46, 84, .2);
+  }
+}
+
+/* Сборът стои долу вдясно под "общо", за да остане повече място за надписите
+   отляво. */
+.rec-card-sum {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  margin-left: auto;
+  text-align: right;
+}
+.rec-card-sum .rec-card-avg {
+  font-size: 11px;
+  line-height: 1.1;
+}
+.rec-card-sum .rec-card-total {
+  line-height: 1.15;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ДЕСКТОП: панелът не е стена, а плаващи стъклени балончета над картата.
+   Това е ПРИБЛИЖЕНИЕ до „liquid glass" с уеб средства (backdrop-filter +
+   слоести ръбове), не официалният системен материал на Apple.
+   ───────────────────────────────────────────────────────────────────────── */
+@media (min-width: 881px) {
+  .workspace {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .map-pane {
+    grid-column: 1;
+  }
+  /* Картата минава ПОД балончетата, затова колоната не хваща мишката -
+     хващат я само самите балончета. */
+  .sidebar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: clamp(320px, 30vw, 400px);
+    z-index: 6;
+    background: transparent;
+    border-left: 0;
+    pointer-events: none;
+  }
+  .sidebar > *,
+  .sidebar-body > * {
+    pointer-events: auto;
+  }
+  .sidebar-body {
+    padding: 12px 14px 18px;
+    gap: 12px;
+    scrollbar-width: none;
+  }
+  .sidebar-body::-webkit-scrollbar {
+    width: 0;
+  }
+  /* Едно балонче: полупрозрачно бяло стъкло, светъл ръб отгоре (както
+     светлината пада върху извит материал) и синкава сянка, за да се отдели
+     от картата. */
+  .filters,
+  .seatview,
+  .viewedlist.is-open {
+    border-radius: var(--radius);
+    background: var(--glass-sheen), rgba(255, 255, 255, .72);
+    border: 1px solid var(--glass-line);
+    box-shadow: var(--glass-edge);
+  }
+  /* Хапчетата са сами по себе си балончета - обща подложка под тях не
+     трябва: тя само ядеше височина и увисваше празна отстрани. */
+  .filterbar {
+    margin: 0;
+    padding: 12px 14px 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .filters {
+    padding: 12px;
+  }
+  /* Количката е балонче като съседите си - иначе стърчеше като плътна
+     черна плоча между стъклените ценови категории и картата на мястото. */
+  .pk-card {
+    background: var(--glass-sheen), rgba(255, 255, 255, .72);
+    border: 1px solid var(--glass-line);
+    box-shadow: var(--glass-edge);
+  }
+  .pk-total {
+    background: color-mix(in srgb, var(--card-2) 60%, transparent);
+  }
+  .viewedlist.is-open {
+    border-radius: var(--radius);
+  }
+  /* Заглавията стоят върху картата, не върху балонче - затова им трябва
+     собствена четимост. */
+  .block-title {
+    padding: 2px 6px;
+    color: var(--ink);
+    text-shadow: 0 1px 6px rgba(255, 255, 255, .9);
+  }
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .filters,
+    .seatview,
+    .viewedlist.is-open {
+      background: var(--glass-sheen), var(--glass-tint);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+    }
+  }
+  /* Прозрачността е украса: щом системата я ограничава, балончетата стават
+     плътни, вместо да станат нечетими. */
+  @media (prefers-reduced-transparency: reduce) {
+    .filters,
+    .seatview,
+    .viewedlist.is-open {
+      background: var(--card);
+      border-color: var(--line);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+}
+
+/* „Препоръчай ми" стои най-вдясно и се различава от филтрите: то не стеснява
+   резултата, а попълва избора. */
+.fb-pill-rec {
+  margin-left: auto;
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(180deg, #ffffff33, #ffffff00), var(--accent);
+  box-shadow:
+    inset 0 1px 0 #ffffff5c,
+    0 6px 18px var(--accent-ring);
+}
+@media (hover: hover) and (pointer: fine) {
+  .fb-pill-rec:hover {
+    filter: brightness(1.08);
+  }
+}
+@media (max-width: 880px) {
+  .fb-pill-rec {
+    margin-left: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Половин екран трябва да ПОБЕРЕ съдържанието, не да го скролва: два скрола
+   (карта и панел) един до друг се бият, а отрязаният текст изглежда счупен.
+   Затова на телефон всичко се стяга - категориите минават в един ред, който
+   се плъзга настрани, а празното състояние спира да е плакат.
+   ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 880px) {
+  .sidebar-body {
+    gap: 8px;
+    padding: 10px 10px 12px;
+  }
+  /* Един ред, който се плъзга. Маската отдясно оставя следващата категория
+     да наднича на всяка ширина - иначе на широк телефон редът свършва точно
+     на ръба и изглежда, че това са всички категории. */
+  .chip-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 6px 2px 6px;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 30px), #0000);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 30px), #0000);
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-2) transparent;
+  }
+  .chip-row::-webkit-scrollbar {
+    height: 3px;
+  }
+  .chip-row::-webkit-scrollbar-thumb {
+    background: var(--line-2);
+    border-radius: 999px;
+  }
+  .chip-row::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .chip {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+  .filters-head {
+    padding: 0 4px;
+  }
+  .block-title {
+    display: none;
+  }
+  /* Заглавието на избраното остава: „Премахни всички" само, увиснало над
+     редовете, не казва какво ще премахне. */
+  .pk-head .block-title {
+    display: block;
+    padding: 0 2px;
+  }
+  .picklist {
+    gap: 6px;
+  }
+  .pk-clear {
+    min-height: 26px;
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+  .pk-row {
+    padding: 8px 6px 8px 12px;
+    gap: 8px;
+  }
+  .pk-360 {
+    height: 22px;
+    padding: 0 7px;
+    font-size: 10px;
+  }
+  .pk-total {
+    padding: 9px 12px 10px;
+  }
+  .sv-empty {
+    gap: 4px;
+    padding: 16px 20px 18px;
+  }
+  .sv-empty-icon {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 2px;
+  }
+  .sv-empty-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  .sv-empty-text {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}
+
+/* Ценовите категории са стъклени тела с цвят вътре, не плътни лакирани копчета.
+   Ярката боя идва inline от данните, затова се избелва с вътрешна бяла сянка -
+   така цветът си личи като тинт, а тъмното мастило се чете върху всяка боя. */
+.chip[data-tier] {
+  border-color: transparent;
+  background-image: linear-gradient(180deg, #ffffff2e, #ffffff05) !important;
+  color: var(--ink) !important;
+  box-shadow:
+    inset 0 0 0 999px #ffffffb8,
+    inset 0 1px 0 #ffffffcc,
+    0 5px 14px rgba(11, 27, 58, .16);
+}
+.chip[data-tier].is-active {
+  /* Избраната категория свети в пълния си цвят - тя е отговорът на въпроса.
+     Затова и надписът минава на тъмно мастило: върху бледо жълто и светло
+     зелено бялото падаше до 1.3:1. */
+  color: var(--chip-ink, #10131a) !important;
+  box-shadow:
+    inset 0 1px 0 #ffffff5c,
+    0 6px 18px rgba(11, 27, 58, .28);
+}
+
+/* С избрано място панелът носи цена и три бутона - на половин екран това вече
+   не се събираше. Двете второстепенни действия минават едно до друго, а
+   надписът „ИЗГЛЕД ОТ" отпада: заглавието под него казва същото. */
+@media (max-width: 880px) {
+  .sv-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 12px 12px 12px;
+  }
+  .sv-body > * {
+    grid-column: 1 / -1;
+  }
+  .btn-360,
+  .btn-buy {
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+  .btn-360 svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+/* Под 380px надписът на „Разгледай в 360°" се пренасяше на два реда и
+   „Купи билети" падаше под ръба на листа. */
+@media (max-width: 380px) {
+  .btn-360 {
+    font-size: 11.5px;
+    padding: 9px 8px;
+    white-space: nowrap;
+    gap: 6px;
+  }
+  .btn-360 svg {
+    width: 13px;
+    height: 13px;
+  }
+  .sv-body {
+    gap: 6px;
+  }
+  .sv-name {
+    font-size: 14px;
+  }
+  /* Бележката остава: при няколко билета тя носи сметката („общо за 3
+     билета"), а не повторение на цената. */
+  .sv-meta-note {
+    font-size: 11px;
+  }
+  .btn-buy {
+    padding: 9px 12px;
+  }
+}
+
+/* Избраното място не се изгубва при скрол: то и бутоните му остават залепени
+   за дъното на панела, докато отгоре минават филтрите. Заедно с „Премахнете
+   избор" над листа, изборът е винаги под ръка. */
+.seatview {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+/* Списъкът с билетите минава ПОД залепената карта. Без сянка нагоре редът,
+   който се подпъхва, изглежда като част от нея. */
+@media (max-width: 880px) {
+  .seatview {
+    box-shadow:
+      0 -10px 20px rgba(11, 27, 58, .18),
+      var(--shadow-card);
+  }
+}
+@media (min-width: 881px) {
+  .seatview {
+    /* Върху стъкло sticky показва долния слой - затова фонът тук е плътен. */
+    background: var(--card);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Плавност на панела. Съдържанието на „Избрано" се пренаписва изцяло при
+   всеки избор - без това то просто примигва на ново място.
+   Анимацията пипа само opacity и transform, тоест не мести нищо друго и
+   листът може да мери височината си още в същия кадър.
+   ───────────────────────────────────────────────────────────────────────── */
+@keyframes sv-enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.seatview .sv-body,
+.seatview .sv-empty {
+  animation: sv-enter 0.24s var(--ease-drawer) both;
+}
+/* Редовете влизат един след друг - окото хваща реда, вместо цял блок наведнъж. */
+.sv-body > * {
+  animation: sv-enter 0.26s var(--ease-drawer) both;
+}
+.sv-body > *:nth-child(2) {
+  animation-delay: 0.03s;
+}
+.sv-body > *:nth-child(3) {
+  animation-delay: 0.06s;
+}
+.sv-body > *:nth-child(n + 4) {
+  animation-delay: 0.09s;
+}
+.sidebar.is-moving {
+  will-change: height;
+}
+.map-reset {
+  transition:
+    opacity var(--dur-ui) ease,
+    transform var(--dur-ui) var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .seatview .sv-body,
+  .seatview .sv-empty,
+  .sv-body > * {
+    animation: none;
+  }
+  .sidebar:not(.is-dragging),
+  .map-stack {
+    transition: none;
+  }
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Натиск. На телефон ховър няма - без това нито едно хапче не отговаря на
+   пръста и докосването изглежда пропуснато. Мащабът е нежен: 0.97 се усеща
+   като натиснато копче, 0.9 - като счупено.
+   ───────────────────────────────────────────────────────────────────────── */
+.fb-pill:active,
+.chip:active,
+.qty-option:active,
+.listing-row:active,
+.pk-clear:active,
+.pk-x:active,
+.gate-num:active,
+.gate-chip:active,
+.rec-card:active,
+.map-reset:active,
+.viewedlist-row:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) var(--ease-out);
+}
+.btn-buy:active,
+.party-find-btn:active,
+.btn-360:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Листът пресмята височина на всеки кадър. `contain` държи преподреждането
+   вътре в него - иначе всеки кадър от плъзгането минава през целия документ. */
+@media (max-width: 880px) {
+  .sidebar {
+    contain: layout;
+  }
+}
+
+/* Първото показване на „Избрано" влиза със стъпало - окото хваща реда.
+   Смени ли се мястото обаче, панелът вече е там: стъпалото само го бави и
+   при бързо избиране кадрите се застъпват. Тогава е кратко просветване. */
+.seatview.is-swap .sv-body > * {
+  animation-delay: 0s;
+  animation-duration: 0.14s;
+}
+.seatview.is-swap .sv-body {
+  animation-duration: 0.14s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-pill:active,
+  .chip:active,
+  .qty-option:active,
+  .listing-row:active,
+  .pk-clear:active,
+  .pk-x:active,
+  .gate-num:active,
+  .gate-chip:active,
+  .rec-card:active,
+  .map-reset:active,
+  .viewedlist-row:active,
+  .btn-buy:active,
+  .party-find-btn:active,
+  .btn-360:active:not(:disabled) {
+    transform: none;
+  }
+  .map-stack {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover,
+  .popover[data-open] {
+    transform: none;
+  }
+}
+
+/* A clear recommendation action, with filters immediately above it. */
+#filterbar {display:flex;flex-wrap:wrap;gap:8px;padding:14px}
+#filterbar .fb-pill-rec {flex:1 0 100%;order:10;min-height:50px;border-radius:16px;font-size:16px;font-weight:700;background:linear-gradient(125deg,#1f60dd,#153d8a);color:white;box-shadow:inset 0 1px 0 #ffffff55,0 8px 22px #153d8a28}
+.fb-pill-rec::before{content:'✦';margin-right:9px;font-size:20px}
+#filterbar .fb-pill-rec:hover{background:#123879}
+.gate-card {border:1px solid #ffffff;box-shadow:0 30px 100px #153d8a30,inset 0 1px 0 white;background:linear-gradient(140deg,#ffffff,#edf3ff);border-radius:28px}
+.gate-card button{min-height:44px}
+/* ─────────────────────────────────────────────────────────────────────────
+   „От вашето място". Гледката е целият екран; контролите плуват над нея.
+   Стъклото беше тъмносиньо, защото бледосини бутони върху белия таван на
+   залата изчезваха. Сега е БЯЛО - като хапчетата над схемата - и не изчезва
+   по друг път: плътност .88, видим ръб и истинска сянка. Така целият изглед
+   е в синьото и бялото на сайта, а не в чужда тъмна тема.
+   ───────────────────────────────────────────────────────────────────────── */
+.arena-view { position: fixed; inset: 0; z-index: 10000; background: #e8edf5; color: var(--ink); font-family: 'Sofia Sans', system-ui; }
+.arena-view__stage { position: absolute; inset: 0; }
+.arena-view canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.arena-view canvas:active { cursor: grabbing; }
+
+/* Мастилото трябва да се чете и над белия таван, и над черните седалки:
+   затова стъклото е почти плътно, а ръбът и сянката му го отделят от белия
+   таван, където сам по себе си би изчезнал. */
+.arena-view__glass, .arena-view button.arena-view__glass { background: rgba(255, 255, 255, .92); border: 1px solid rgba(11, 27, 58, .14); box-shadow: 0 14px 40px rgba(11, 27, 58, .22); }
+@supports ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .arena-view__glass, .arena-view button.arena-view__glass { background: rgba(255, 255, 255, .86); -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3); }
+}
+.arena-view button.arena-view__glass:active { background: rgba(233, 239, 250, .96); }
+@media (hover: hover) and (pointer: fine) {
+  .arena-view button.arena-view__glass:hover { background: rgba(240, 245, 252, .96); }
+}
+
+.arena-view__head { position: absolute; top: 0; left: 0; right: 0; z-index: 2; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: calc(12px + env(safe-area-inset-top, 0px)) 12px 0; pointer-events: none; }
+.arena-view__head > * { pointer-events: auto; }
+/* Шапката е един ред, откакто името на мястото живее само долу в избора. */
+.arena-view__head > div { min-width: 0; padding: 10px 15px 9px; border-radius: 999px; }
+.arena-view__eyebrow { display: block; font-size: 10px; letter-spacing: .13em; line-height: 1.3; text-transform: uppercase; font-weight: 700; color: var(--accent-2); }
+
+.arena-view button { min-height: 46px; min-width: 46px; padding: 12px 18px; border-radius: 999px; border: 1px solid rgba(11, 27, 58, .16); background: rgba(255, 255, 255, .82); color: var(--ink); font: 650 14px 'Sofia Sans', system-ui; cursor: pointer; }
+.arena-view button:active { background: rgba(228, 236, 248, .95); }
+@media (hover: hover) and (pointer: fine) {
+  .arena-view button:hover { background: rgba(238, 243, 251, .95); }
+}
+.arena-view button:focus-visible, .arena-view select:focus-visible, .arena-view canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+/* Пълнежът трябва да бие `.arena-view button` по специфичност, иначе
+   18px глиф стои в 8px съдържание и се изтласква надясно. Подредбата е
+   flex, а НЕ grid: Safari дълго не поддържаше grid върху <button> и там
+   хиксът падаше горе вляво вместо в средата на кръгчето. */
+.arena-view button.arena-view__close { flex: 0 0 46px; width: 46px; height: 46px; padding: 0; display: flex; align-items: center; justify-content: center; line-height: 0; }
+.arena-view__close svg { display: block; width: 18px; height: 18px; color: var(--accent-2); }
+
+.arena-view__foot { position: absolute; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 2; display: flex; flex-direction: column; gap: 9px; padding: 12px 12px 10px; border-radius: 24px; }
+.arena-view__controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* Изборът на място заема свой ред: с бутоните до него не остава четим текст. */
+.arena-view__viewpoint { flex: 1 0 100%; min-width: 0; min-height: 46px; padding: 12px 40px 12px 16px; border: 1px solid rgba(11, 27, 58, .16); border-radius: 999px; background-color: rgba(255, 255, 255, .82); color: var(--ink); font: 650 14px 'Sofia Sans', system-ui; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23153D8A' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 16px; }
+.arena-view__viewpoint option { color: #0b1b3a; background: #fff; }
+.arena-view__to-stage, .arena-view__chair { flex: 1 1 auto; }
+/* Плюсът и минусът са резервният път, откакто гледката се приближава с два
+   пръста. Затова заемат малко: 38x36 вместо 52x46 и стоят в ъгъла, вместо да
+   спорят по тежест с „Към сцената". */
+.arena-view__zoom { flex: 0 0 auto; display: flex; border: 1px solid rgba(11, 27, 58, .16); border-radius: 999px; overflow: hidden; }
+.arena-view__zoom button { border: 0; border-radius: 0; width: 38px; min-width: 38px; height: 36px; min-height: 36px; padding: 0; font-size: 18px; font-weight: 700; color: var(--accent-2); }
+.arena-view__zoom button + button { border-left: 1px solid rgba(11, 27, 58, .16); }
+/* --ink-faint дава 5.4:1 върху ЧИСТО бяло, но стъклото тук е полупрозрачно
+   върху черните седалки и мерено от пикселите падаше на 3.99:1. По-тъмното
+   мастило го вдига над прага. */
+.arena-view__note { margin: 0; font-size: 11px; line-height: 1.35; text-align: center; color: var(--ink-soft); }
+
+.arena-view__status { position: absolute; inset: 42% 12% auto; z-index: 3; margin: 0; text-align: center; padding: 20px; border-radius: 20px; background: rgba(255, 255, 255, .92); border: 1px solid rgba(11, 27, 58, .14); box-shadow: 0 14px 40px rgba(11, 27, 58, .22); color: var(--ink); font-size: 14px; }
+
+/* Легнал телефон: екранът е висок 390px, а шапката и подвалът изяждаха 43%
+   от него - оставаха 223px гледка. Всичко се свива и остава двойно повече. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .arena-view__head { padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+  .arena-view__foot { bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+                      padding: 7px 9px 6px; gap: 5px; border-radius: 18px; }
+  .arena-view button, .arena-view__viewpoint { min-height: 38px; }
+  .arena-view button.arena-view__close { width: 40px; height: 40px; flex-basis: 40px; }
+  .arena-view__zoom button { height: 34px; min-height: 34px; }
+  .arena-view__note { font-size: 10px; line-height: 1.2; }
+}
+@media (min-width: 700px) {
+  /* На широк екран панелът има място: числата стават по-високи, за да не
+     изглеждат като тесни ленти. */
+  .gate-num { min-height: 60px; }
+  .arena-view__head { padding-inline: 20px; }
+  .arena-view__foot { left: 50%; right: auto; transform: translateX(-50%); width: min(760px, calc(100% - 40px)); }
+  .arena-view__viewpoint { flex: 1 1 260px; }
+  .arena-view__to-stage, .arena-view__chair { flex: 0 0 auto; }
+}
+#filterbar .fb-pill-rec { min-height: 46px; }
+.sheet-summary { display: none; }
+@media(max-width:880px) {
+ #sheet.sidebar { max-height: 100%; padding-bottom: env(safe-area-inset-bottom,0px); border-radius: 24px 24px 0 0; box-shadow: 0 -8px 32px #142e5424; }
+ #sheet-handle { height: 48px; display: grid; grid-template-columns: 1fr auto; align-content: center; column-gap: 12px; padding: 10px 16px 4px; position: relative; text-align: left; color: #163c80; }
+ #sheet-handle .sheet-grip { position: absolute; left: calc(50% - 22px); top: 6px; width: 44px; height: 4px; background: #a2b9dc; }
+ .sheet-handle__title { font: 750 15px system-ui; }
+ /* Подсказката е самият контрол: хапче, което казва какво ще стане при
+    докосване. По-рано отстрани стояха две голи стрелки без думи. */
+ .sheet-handle__hint { display: inline-flex; align-items: center; gap: 2px; padding: 7px 13px; border: 1px solid #cddcf2; border-radius: 999px; background: #f1f6fd; font: 700 12px system-ui; color: #1b4a99; }
+ .sheet-handle__hint b { font-size: 16px; font-weight: 700; }
+ #sheet-handle:active .sheet-handle__hint { background: #e2ebfa; }
+ #sheet .sidebar-body { display: block; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-mask-image: none; mask-image: none; padding: 10px 12px 12px; scrollbar-width: thin; scrollbar-color: #5484cb transparent; }
+ /* Ако има още отдолу, ръбът избледнява: скролът се вижда, вместо да се
+    налага да го отгатнеш. Изчезва щом стигнеш дъното. */
+ #sheet .sidebar-body.has-more { -webkit-mask-image: linear-gradient(#000 calc(100% - 34px), transparent); mask-image: linear-gradient(#000 calc(100% - 34px), transparent); }
+ #sheet .sidebar-body > * { flex: none; margin-bottom: 10px; }
+ #sheet #filterbar { position: static; border: 0; margin: 0 0 12px; padding: 0; box-shadow: none; background: transparent; }
+ #sheet .filterbar-row { padding: 0; }
+ #sheet #filterbar .fb-pill { min-height: 44px; }
+ #sheet #filterbar .fb-pill-rec { min-height: 46px; font-size: 14px; padding: 10px 12px; }
+ #sheet .pk-list { max-height: none; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+ #sheet .pk-card { overflow: visible; }
+ #sheet .pk-foot,#sheet .pk-total { display: none; }
+ #sheet .pk-360 { min-height: 44px; font-size: 12px; }
+ #sheet .pk-x { min-width: 44px; min-height: 44px; }
+ #sheet .pk-clear { min-height: 44px; }
+ #sheet #seatview { position: static; bottom: auto; flex: none; margin: 0 0 12px; }
+ #sheet #seatview:has(.sv-empty),#sheet:has(.pk-row) #seatview { display: none; }
+ #sheet.has-pick .filters { display: none; }
+ #sheet .sheet-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; min-height: 82px; flex: 0 0 auto; border-top: 1px solid #dae4f2; background: #fff; }
+ .sheet-summary__details { min-width: 0; flex: 1; padding: 0; border: 0; background: transparent; text-align: left; color: #153873; cursor: pointer; }
+ .sheet-summary__details strong { display: block; font: 750 15px system-ui; margin-bottom: 4px; }
+ .sheet-summary__details span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font: 500 11px/1.4 system-ui; color: #486383; }
+ .sheet-summary__action { min-height: 46px; padding: 12px 16px; flex: 0 0 auto; border: 1px solid #1b51ad; border-radius: 15px; background: linear-gradient(145deg,#2466d7,#17428c); color: white; font: 700 13px system-ui; cursor: pointer; }
+ #sheet[data-mode=peek] .sidebar-body { display: none; }
+ #sheet[data-mode=peek] .sheet-summary { flex: 1; padding-top: 6px; border-top: 0; }
+ #sheet[data-mode=full] .sidebar-body { scroll-padding-block: 12px; }
+
+ /* Избраните места живеят в самата лента: виждат се, отварят изгледа от
+    мястото с едно докосване и се махат с второ, без да се отваря панелът. */
+ #sheet .sheet-sum__line { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+ #sheet .sheet-sum__clear { flex: 0 0 auto; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 12px; background: transparent; color: #a3364a; font: 650 13px system-ui; cursor: pointer; }
+ #sheet .sheet-sum__seats { display: flex; flex: 0 0 auto; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+ #sheet .sheet-sum__seats::-webkit-scrollbar { display: none; }
+ /* Когато чиповете не се събират, десният ръб избледнява: отрязаният чип
+    се чете като „има още", а не като счупен изглед. */
+ #sheet .sheet-sum__seats.is-scroller { scroll-snap-type: x proximity; -webkit-mask-image: linear-gradient(90deg,#000 calc(100% - 26px),transparent); mask-image: linear-gradient(90deg,#000 calc(100% - 26px),transparent); }
+ #sheet .sheet-sum__seats.is-scroller .seatchip { scroll-snap-align: start; }
+ #sheet .seatchip { display: flex; align-items: stretch; flex: 0 0 auto; max-width: 82vw; border: 1px solid #cfdcf1; border-radius: 14px; background: #f2f6fd; overflow: hidden; }
+ #sheet .seatchip__view { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 8px 4px 8px 12px; border: 0; background: transparent; color: #153873; text-align: left; cursor: pointer; }
+ #sheet .seatchip__view.is-flat { cursor: default; }
+ #sheet .seatchip__eye { width: 18px; height: 18px; flex: 0 0 18px; color: #1f57bb; }
+ #sheet .seatchip__txt { min-width: 0; }
+ #sheet .seatchip__txt b { display: block; font: 750 13px/1.25 system-ui; white-space: nowrap; }
+ #sheet .seatchip__txt i { display: block; font: 550 11px/1.3 system-ui; font-style: normal; color: #4a6489; white-space: nowrap; }
+ #sheet .seatchip__x { width: 46px; flex: 0 0 46px; min-height: 52px; border: 0; border-left: 1px solid #dbe5f5; background: transparent; color: #a3364a; cursor: pointer; }
+ #sheet .seatchip__x svg { width: 17px; height: 17px; }
+ #sheet.has-pick .sheet-summary { flex-direction: column; align-items: stretch; gap: 8px; padding: 8px 14px 12px; }
+ /* В колона трите реда не се свиват: лентата се оразмерява по тях, не обратното. */
+ #sheet.has-pick .sheet-sum__line { flex: 0 0 auto; }
+ #sheet.has-pick .sheet-summary__details strong { margin-bottom: 2px; }
+ /* Целта за пръст: самият надпис е нисък, затова получава своя височина. */
+ #sheet.has-pick .sheet-summary__details { min-height: 44px; display: flex; flex-direction: column; justify-content: center; }
+ #sheet .sheet-sum__go { display: flex; gap: 8px; flex: 0 0 auto; }
+ #sheet .sheet-sum__redo { flex: 0 0 auto; min-height: 52px; padding: 0 14px; border: 1px solid #bfd2f0; border-radius: 15px; background: #fff; color: #1b4a99; font: 700 13px system-ui; cursor: pointer; }
+ #sheet .sheet-sum__redo[hidden] { display: none; }
+ #sheet .sheet-sum__redo:active { background: #eaf1fd; }
+ #sheet .sheet-sum__redo:focus-visible { outline: 3px solid #2464e8; outline-offset: 2px; }
+ #sheet.has-pick .sheet-sum__go { width: 100%; }
+ #sheet.has-pick .sheet-summary__action { flex: 1; min-height: 52px; font-size: 15px; }
+ #sheet.has-pick .sheet-summary__details span { -webkit-line-clamp: 1; }
+ #sheet.has-pick[data-mode=peek] .sheet-summary { justify-content: flex-start; }
+ /* Отворен панел: списъкът с местата е вътре, цял и вертикален. Тогава
+    чиповете в лентата само биха повторили същото и биха изяли височина. */
+ #sheet:not([data-mode=peek]) .sheet-sum__seats,
+ #sheet:not([data-mode=peek]) .sheet-sum__clear { display: none; }
+ /* Отворен панел: подредът повтаря списъка точно над него - махаме го, за да
+    се събере още един ред места без скрол. */
+ #sheet.has-pick .sheet-summary__details span,
+ #sheet:not([data-mode=peek]) .sheet-summary__details span { display: none; }
+ /* Осем места в списъка: по-тесен ред, но целта за пръст си остава 44px. */
+ #sheet .pk-row { padding: 7px 6px 7px 12px; }
+ @media (hover: hover) and (pointer: fine) {
+   #sheet .seatchip__view:hover { background: #e7eefb; }
+   #sheet .seatchip__x:hover { background: #fbe9ec; }
+ }
+ #sheet .seatchip__view:focus-visible, #sheet .seatchip__x:focus-visible, #sheet .sheet-sum__clear:focus-visible { outline: 3px solid #2464e8; outline-offset: -3px; }
+ #sheet .seatchip__view:active { background: #e2ebfa; }
+ #sheet .seatchip__x:active { background: #f7dfe4; }
+
+}
+@media(max-width:880px){
+ #sheet #filterbar { overflow: visible; -webkit-mask-image:none; mask-image:none; }
+ #sheet .pk-list { flex:none; height:auto; min-height:0; max-height:none; }
+ #sheet .pk-clear,#sheet .pk-360,#sheet .pk-x { min-height: 44px; }
+}
+@media(max-width:880px){
+ /* Над зуума (9): разтегнатият лист трябва да покрива плюса и минуса. */
+ #sheet.sidebar { z-index: 12; }
+
+}
+
+/* Panel size controls share the handle line; no extra toolbar row. */
+@media(max-width:880px) {
+ /* На тесен екран подсказката бута заглавието на втори ред: дръжката и
+    стрелките казват същото и без нея. */
+ /* На 320px подсказката остава: тя е единственото, което казва че лентата се
+    отваря. Свива се заглавието, не действието. */
+ @media (max-width: 360px) {
+   .sheet-handle__title { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+   .sheet-handle__hint { flex: 0 0 auto; padding: 7px 11px; }
+   /* На 320px трите хапчета и зумът се разминават на косъм: по-тесни отстъпи
+      вътре в хапчето връщат три пръста разстояние между тях. */
+   .map-rail .fb-pill { padding: 8px 11px; }
+ }
+}
+
+/* Startup feedback remains available even when a graphics/script failure stops the app. */
+.startup-status { position:fixed;left:50%;top:45%;transform:translateX(-50%);padding:16px 24px;border-radius:20px;background:#fff;color:#153d8a;z-index:5;pointer-events:none; }
+.startup-failure { position:fixed;inset:0;z-index:10000;background:#eef2f8;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:#153d8a; }
+.startup-failure[hidden],.startup-status[hidden] { display:none; }
+.startup-failure h2 { font-size:24px; }
+.startup-failure button { min-height:48px;margin:16px;padding:12px 24px;border:0;border-radius:24px;background:#153d8a;color:white;font:inherit;cursor:pointer; }
+.startup-failure details { max-width:600px;overflow-wrap:anywhere; }
+
+/* SVG is the working seating map when browser policy disallows WebGL. */
+.map-svg { background: #EEF2F8; position: relative; overflow: hidden; }
+.svg-hall { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+.svg-hall [role="button"]:focus-visible { outline: none; }
+.svg-hall [role="button"]:focus-visible > path,
+.svg-hall [role="button"]:focus-visible > circle { stroke: #0B1B3A; stroke-width: 3px; vector-effect: non-scaling-stroke; }
+.svg-seat-number { text-anchor: middle; font-family: var(--font); font-weight: 700; pointer-events: none; }
+.svg-map-toolbar { position: absolute; top: 14px; left: 14px; right: 14px; display: flex; align-items: center; gap: 6px; pointer-events: none; }
+.svg-map-caption { margin-right: auto; background: #FFFFFFED; border: 1px solid var(--line); border-radius: 22px; padding: 10px 14px; color: var(--ink); font-weight: 650; font-size: 13px; }
+.svg-map-toolbar button { pointer-events: auto; flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 50%; color: var(--accent-2); background: #FFFFFF; font: 26px/1 var(--font); cursor: pointer; }
+.svg-map-toolbar button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.svg-map-tip { position: absolute; top: 66px; left: 14px; right: 14px; width: fit-content; max-width: calc(100% - 28px); padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: #FFFFFFF2; color: var(--ink); font-size: 13px; pointer-events: none; }
+.map-svg .svg-hall:active { cursor: grabbing; }
+@media (max-width: 480px) {
+  .svg-map-toolbar { top: 8px; left: 8px; right: 8px; gap: 4px; }
+  .svg-map-caption { max-width: calc(100% - 96px); padding: 8px 10px; font-size: 12px; line-height: 1.2; }
+}
+@media (min-width: 881px) {
+  #map.map-svg { width: calc(100% - clamp(320px, 30vw, 400px)); }
+}
+@media (max-width: 880px) {
+  .svg-map-toolbar { top: 64px; }
+  .svg-map-tip { top: 118px; }
+}
+#arena-plan-svg .svg-seat-number { font-family: var(--font); font-weight: 700; text-anchor: middle; pointer-events: none; }
+#arena-plan-svg .lb-min { opacity: 0; }
+#arena-plan-svg.z-near .lb-min { opacity: 1; }
+#arena-plan-svg .lb-sect { fill: #435979; }
+#arena-plan-svg .lb-entry { fill: #A86404; }
+#arena-plan-svg [data-kind="seat"], #arena-plan-svg [data-kind="table"] { cursor: pointer; }
+#arena-plan-svg [data-kind="seat"]:focus-visible { outline: none; stroke: #0B1B3A !important; stroke-width: 3px !important; }
+
+#arena-plan-svg .sect.is-focused > g > path { fill: #153D8A; }
+
+/* Recovery stays usable when a graphics context fails after the initial probe. */
+.startup-failure p { max-width:520px;text-align:center; }
+.startup-alternative { display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 24px;border-radius:24px;background:#153d8a;color:#fff;font:inherit;text-decoration:none; }
+.startup-alternative[hidden] { display:none; }
+.startup-alternative:focus-visible { outline:3px solid #153d8a;outline-offset:4px; }

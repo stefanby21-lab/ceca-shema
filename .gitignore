@@ -1,0 +1,7 @@
+.vercel
+.env*
+# Данните на Тони Стораро (с реални продажби) - само локална справка
+venue-data-arena.js
+.vercel
+.env*
+node_modules

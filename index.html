@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="bg">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="only light" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <!-- Схемата е инструмент, не съдържание: индексирането ѝ би вдигнало
+         празна страница срещу map.html на сайта. Затова noindex остава дори
+         сега, когато е публична. Картичките отдолу са за СПОДЕЛЯНЕ - Viber,
+         Messenger и Facebook четат og:, не robots, а без тях линкът тръгва
+         гол. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <meta
+      name="description"
+      content="Изберете мястото си в Арена 8888 София: 3D схема на залата с всички свободни места, цените по категории и изгледа от всеки стол."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Арена 8888 София" />
+    <meta property="og:locale" content="bg_BG" />
+    <meta property="og:title" content="Изберете мястото си - Арена 8888 София" />
+    <meta
+      property="og:description"
+      content="3D схема на залата с всички свободни места, цените по категории и изгледа от всеки стол."
+    />
+    <meta property="og:url" content="https://arena-8888-shema.vercel.app/" />
+    <meta property="og:image" content="https://arena-8888.vercel.app/img/og-default.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preload" href="venue-data-arena.js?v=d044b25730" as="script" />
+    <title>Арена 8888 - схема на залата</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%23FFFFFF%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-family=%27Helvetica,Arial%27 font-size=%2717%27 font-weight=%27bold%27 fill=%27%23153D8A%27 text-anchor=%27middle%27%3E8%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="vendor/maplibre-gl.css?v=e6e97fa50c.7.1" />
+    <link rel="stylesheet" href="styles.css?v=6df02da1a9" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="topbar-branding">
+          <a id="brand" class="brand" data-local-href="../prototype/" href="https://arena-8888.vercel.app/">
+            Arena <span>8888</span>
+          </a>
+          <a
+            class="topbar-back"
+            href="https://arena-8888.vercel.app/sabitie/toni-storaro.html"
+            data-local-href="../prototype/sabitie/toni-storaro.html"
+            aria-label="Назад към събитието"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m15 5-7 7 7 7" />
+            </svg>
+            Назад
+          </a>
+        </div>
+        <div class="event">
+          <h1 class="event-title">Арена 8888</h1>
+          <p class="event-sub">София</p>
+        </div>
+        <div class="topbar-right">
+          <span class="live-chip"><span class="live-dot" aria-hidden="true"></span>Схема на събитието</span>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <main id="map" class="map-pane" aria-label="Интерактивна карта на залата">
+        </main>
+
+        <aside class="sidebar" id="sheet">
+          <!-- Дръжката: панелът е едно цяло и се вдига, вместо да се скролва
+               вътрешно. На широк екран я няма - там колоната стои на място. -->
+          <button
+            id="sheet-handle"
+            class="sheet-handle"
+            type="button"
+            aria-controls="sheet"
+            aria-expanded="false"
+            aria-label="Отворете панела с местата"
+          >
+            <span class="sheet-grip" aria-hidden="true"></span>
+          </button>
+          <section id="filterbar" class="filterbar" aria-label="Филтри"></section>
+
+          <div class="sidebar-body">
+            <section id="filters" class="filters" aria-label="Ценова категория"></section>
+
+            <section id="picklist" class="picklist" aria-live="polite">
+              <div class="pk-head"><h2 class="block-title">Избрано</h2></div>
+            </section>
+
+            <section id="seatview" class="seatview" aria-live="polite">
+              <div class="sv-empty">
+                <div class="sv-empty-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 11V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4" />
+                    <path
+                      d="M4 11a2 2 0 0 1 2 2v1h12v-1a2 2 0 0 1 4 0v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2Z"
+                    />
+                    <path d="M6 19v2M18 19v2" />
+                  </svg>
+                </div>
+                <p class="sv-empty-title">Изберете места</p>
+                <p class="sv-empty-text">
+                  Натиснете място върху схемата, за да видите изгледа от него и цената.
+                </p>
+              </div>
+            </section>
+
+            <section id="viewedlist" class="viewedlist" aria-live="polite"></section>
+
+          </div>
+        </aside>
+
+        <!-- Долната лента: стои в работното поле, за да се вдига заедно с
+             листа. Вътре в картата тя оставаше под него. -->
+        <div id="mapstack" class="map-stack">
+          <div class="map-actions" role="group" aria-label="Изглед на залата">
+            <button id="mapreset" class="map-reset" type="button" hidden>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M9 3H5a2 2 0 0 0-2 2v4M15 3h4a2 2 0 0 1 2 2v4M9 21H5a2 2 0 0 1-2-2v-4M15 21h4a2 2 0 0 0 2-2v-4" />
+              </svg>
+              Цялата зала
+            </button>
+            <button id="mappreview" class="map-reset map-preview" type="button" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12s3.7-6.4 10-6.4 10 6.4 10 6.4-3.7 6.4-10 6.4S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="2.7" />
+              </svg>
+              Преглед на места
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="startup-status" class="startup-status" role="status">Зареждане на схемата…</div>
+    <section id="startup-failure" class="startup-failure" role="alert" hidden>
+      <h2 id="startup-title">Схемата не успя да се зареди</h2>
+      <p id="startup-hint">Опитайте отново, за да заредите актуалните файлове.</p>
+      <a id="startup-2d" class="startup-alternative" href="?view=2d" hidden>Отворете 2D схемата</a>
+      <button id="startup-retry" type="button">Заредете отново</button>
+      <details><summary>Подробности за грешката</summary><p id="startup-detail"></p></details>
+    </section>
+    <script type="application/json" data-webgl="true" data-src="vendor/maplibre-gl.js?v=8d00c7860a.7.1"></script>
+    <script type="application/json" data-src="venue-data-arena.js?v=d044b25730"></script>
+    <script type="application/json" data-webgl="true" data-src="arena-geometry.js?v=dc04e1762a"></script>
+    <script type="application/json" data-webgl="true" data-src="arena-seatview.js?v=a893ce5f03"></script>
+    <script type="application/json" data-svg="true" data-src="arena-plan-svg.js?v=f358ea4a26"></script>
+    <script type="application/json" data-fallback="map-svg.js?v=3f53f159ad" data-src="map.js?v=153ac114c0"></script>
+    <script type="application/json" data-webgl="true" data-src="seatview3d.js?v=0919ec099f"></script>
+    <script type="application/json" data-src="seatfinder.js?v=fe332e5646"></script>
+    <script type="application/json" data-src="ui.js?v=f0b2ec4f37"></script>
+    <script type="application/json" data-src="app.js?v=00ef1ac439"></script>
+    <script type="application/json" data-src="sheet.js?v=58ca18f9f0"></script>
+    <script src="startup.js?v=a5b8f0aef6"></script>
+  </body>
+</html>

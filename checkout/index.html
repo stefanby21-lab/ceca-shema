@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="bg">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="only light" />
+    <script>
+      // Vercel serves /checkout without a slash; assets still belong to its directory.
+      (function () {
+        var path = location.pathname.replace(/\/index\.html$/, '/');
+        if (path.charAt(path.length - 1) !== '/') path += '/';
+        var base = document.createElement('base');
+        base.href = location.origin + path;
+        document.head.appendChild(base);
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Завършете поръчката - Арена 8888 София</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%23FFFFFF%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-family=%27Helvetica,Arial%27 font-size=%2717%27 font-weight=%27bold%27 fill=%27%23153D8A%27 text-anchor=%27middle%27%3E8%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="../fonts/site.css" />
+    <link rel="stylesheet" href="checkout.css?v=6c16827264" />
+  </head>
+  <body>
+    <header class="checkout-head">
+      <div class="checkout-branding">
+        <a class="arena-mark" data-arena-home href="https://arena-8888.vercel.app/" aria-label="Арена 8888 София, начало">
+          Арена <b>8888</b>
+        </a>
+        <a class="checkout-back" href="../?restore=1" aria-label="Назад към избор на места">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m15 5-7 7 7 7" />
+          </svg>
+          Назад
+        </a>
+      </div>
+      <div class="checkout-head__event">
+        <strong>Тони Стораро</strong>
+        <span>13 ноември 2026 · 20:00</span>
+      </div>
+      <span class="checkout-live"><i aria-hidden="true"></i>Демо поръчка</span>
+    </header>
+
+    <main id="checkout-app">
+      <section class="checkout-hero" aria-labelledby="checkout-event-title">
+        <div class="checkout-hero__backdrop" aria-hidden="true">
+          <img src="../assets/toni-storaro.webp" alt="" />
+        </div>
+        <div class="checkout-hero__inner">
+          <img
+            class="checkout-poster"
+            src="../assets/toni-storaro.webp"
+            alt="Афиш на Тони Стораро - юбилеен концерт"
+            width="700"
+            height="700"
+          />
+          <div class="checkout-event">
+            <p class="eyebrow">Завършете поръчката</p>
+            <h1 id="checkout-event-title">Тони Стораро - юбилеен концерт</h1>
+            <div class="event-meta">
+              <span>13 ноември 2026, 20:00</span>
+              <i aria-hidden="true"></i>
+              <span>Зала „Арена 8888 София“</span>
+              <i aria-hidden="true"></i>
+              <span id="hero-sector">Избрани места</span>
+            </div>
+          </div>
+          <div class="hold-clock" role="status" aria-live="off">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M12 7v5l3 2"></path>
+            </svg>
+            <span id="hold-clock">Демо · без резервация</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="checkout-stage" aria-label="Завършване на поръчката">
+        <div id="empty-cart" class="empty-cart" hidden>
+          <span class="empty-cart__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 7h16l-1.5 11h-13zM8 7a4 4 0 0 1 8 0"></path></svg>
+          </span>
+          <p class="eyebrow">Вашият избор</p>
+          <h2>Няма избрани места</h2>
+          <p>Върнете се към схемата и изберете местата, които искате да добавите.</p>
+          <a class="button button--primary" href="../">Към схемата</a>
+        </div>
+
+        <div id="checkout-grid" class="checkout-grid">
+          <section class="checkout-card checkout-card--main">
+            <nav id="checkout-steps" class="steps" aria-label="Стъпки на поръчката"></nav>
+            <div id="step-content" class="step-content" aria-live="polite"></div>
+          </section>
+
+          <aside id="order-summary" class="checkout-card order-summary" aria-label="Поръчката ви"></aside>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="guarantee-decline-dialog" class="decision-dialog" aria-labelledby="guarantee-decline-title">
+      <form method="dialog" class="decision-dialog__surface">
+        <div class="decision-dialog__head">
+          <span class="decision-dialog__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.8 2.8 8.3 7 10 4.2-1.7 7-5.2 7-10V6z"></path><path d="m9 12 2 2 4-5"></path></svg>
+          </span>
+          <h2 id="guarantee-decline-title">Моля, потвърдете Вашия отказ от гаранцията</h2>
+        </div>
+        <div class="decision-dialog__body">
+          <p>Сигурни ли сте, че искате да се откажете от пълната гаранция за връщане на билета?</p>
+          <div class="decision-dialog__warning">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 20h18.4z"></path><path d="M12 9v5M12 17.5v.5"></path></svg>
+            <strong>Билети без гаранция не подлежат на връщане или замяна.</strong>
+          </div>
+          <button id="keep-guarantee" class="decision-dialog__keep" value="cancel">Искам пълна гаранция</button>
+          <button id="decline-guarantee" class="decision-dialog__decline" value="default">Не, продължи без гаранция</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="checkout-toast" class="checkout-toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="../venue-data-arena.js?v=d044b25730"></script>
+    <script src="../seatfinder.js?v=fe332e5646"></script>
+    <script src="checkout.js?v=1af7ee9a31"></script>
+  </body>
+</html>
