@@ -1,0 +1,10 @@
+# Само статичните файлове на сайта отиват във Vercel.
+# venue-data-arena.js е локална справка с реални продажби - никога не се качва.
+venue-data-arena.js
+.env*
+.git
+tests
+tools
+task_plan.md
+README.md
+node_modules
