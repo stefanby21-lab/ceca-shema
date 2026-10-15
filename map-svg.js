@@ -6,10 +6,10 @@ window.SeatMap = (function () {
   const BLUE = '#153D8A', GRAY = '#C3CAD5';
   // Местата на маса идват от данните (свойството seats); 6 е само резервата.
   const TABLE_SEATS_FALLBACK = 6;
-  let venue, options, host, svg, numbers, caption, tip, camera, homeCamera, active = null;
+  let venue, options, host, svg, numbers, caption, tip, camera, homeCamera, active = null, standingPin = null, standingBox = null;
   let stateDirty = true;
   const nodes = new Map(), positions = new Map();
-  let selected = new Set(), selectedTables = new Set(), suggested = new Set(), highlighted = null;
+  let selected = new Set(), selectedTables = new Set(), suggested = new Set(), highlighted = null, selectedStanding = false;
   let tiers = null, minimum = null, maximum = null, fees = false, obstructed = false, party = 0;
   let queued = false, fullBounds, drag = null, moved = false;
   const sections = new Map(), seats = new Map(), tables = new Map(), zones = new Map(), bySection = new Map();
@@ -110,15 +110,39 @@ window.SeatMap = (function () {
     const price = fees && p.eurAll != null ? p.eurAll : p.eur;
     return name + (available(p) ? ' · ' + price + ' €' : ' · Не е достъпно');
   }
-  // Правостоящите са зона, не място: името е в данните, купуването е отделна стъпка.
+  // Правостоящите са зона, не място: името е в данните, купува се по брой билети.
+  function zonePrice(p) { return Math.round(fees && p.eurAll != null ? p.eurAll : p.eur); }
   function zoneLabel(p) {
-    const price = fees && p.eurAll != null ? p.eurAll : p.eur;
-    return p.name + (available(p) ? ' · ' + price + ' €' : ' · Не е достъпно');
+    return p.name + (available(p) ? ', ' + zonePrice(p) + ' € на билет' : ', не са достъпни');
   }
   function color(p) { return venue.tiers.find(t => t.tier === p.tier)?.color || BLUE; }
   function button(node, name) {
     node.setAttribute('role', 'button');
     node.setAttribute('aria-label', name);
+  }
+  // Балонът с цената на зоната: същият вид като на WebGL картата (бяла плоча,
+  // синя рамка, името дребно, цената едра) и със стабилен размер на екрана -
+  // групата се разтегля обратно на мащаба на камерата.
+  function buildPin(p) {
+    const pin = element('g', { class: 'svg-standing-pin', 'data-key': p.mk, 'data-kind': 'standing', 'aria-hidden': 'true' });
+    pin.append(
+      element('rect', { class: 'pin-plate', x: -50, y: -21, width: 100, height: 42, rx: 11 }),
+      element('text', { class: 'pin-name', x: 0, y: -4 }, p.name),
+      element('text', { class: 'pin-price', x: 0, y: 12 }, ''));
+    return pin;
+  }
+  function updatePin(p) {
+    if (!standingPin) return;
+    standingPin.querySelector('.pin-price').textContent = zonePrice(p) + ' €';
+    standingPin.classList.toggle('is-selected', selectedStanding);
+    standingPin.classList.toggle('is-off', !available(p));
+    standingPin.setAttribute('aria-label', zoneLabel(p));
+  }
+  function placePin() {
+    if (!standingPin || !host.clientWidth) return;
+    // На телефон балонът е по-малък: зоната там е към 150 px широка.
+    const [x, y] = positions.get(standingPin.dataset.key), k = camera.w / host.clientWidth * (host.clientWidth < 500 ? .82 : 1);
+    standingPin.setAttribute('transform', 'translate(' + x + ' ' + y + ') scale(' + k + ')');
   }
   function within([x, y]) { return x >= camera.x && x <= camera.x + camera.w && y >= camera.y && y <= camera.y + camera.h; }
   function render() {
@@ -135,9 +159,12 @@ window.SeatMap = (function () {
       if (kind === 'standing') {
         const p = zones.get(key).properties;
         if (stateDirty) {
-          node.classList.toggle('is-selected', highlighted === key);
+          node.classList.toggle('is-selected', selectedStanding);
+          node.classList.toggle('is-off', !available(p));
+          node.setAttribute('aria-pressed', String(selectedStanding));
           node.setAttribute('aria-disabled', String(!available(p)));
           node.setAttribute('aria-label', zoneLabel(p));
+          updatePin(p);
         }
         continue;
       }
@@ -169,6 +196,7 @@ window.SeatMap = (function () {
       }
     }
     numbers.replaceChildren(fragment);
+    placePin();
     stateDirty = false;
     caption.textContent = detail ? (active === 'tables' ? 'Маси · Изберете маса' : active && sections.has(active) ? 'Сектор ' + sections.get(active).properties.name + ' · Изберете места' : 'Изберете места') : 'Изберете сектор';
   }
@@ -290,12 +318,39 @@ window.SeatMap = (function () {
       position.x = box.x + box.width / 2; position.y = box.y + box.height / 2;
       const transformed = position.matrixTransform(svg.getScreenCTM().inverse().multiply(node.getScreenCTM()));
       positions.set(key, [transformed.x, transformed.y]);
+      if (kind === 'standing') {
+        // Зоната се хваща с клавиатурата и се обявява като бутон; границите ѝ
+        // служат за кадриране от легендата.
+        node.setAttribute('tabindex', '0');
+        const m = svg.getScreenCTM().inverse().multiply(node.getScreenCTM());
+        const corners = [[box.x, box.y], [box.x + box.width, box.y + box.height]].map(([cx, cy]) => {
+          position.x = cx; position.y = cy; const t = position.matrixTransform(m); return [t.x, t.y];
+        });
+        standingBox = { x: Math.min(corners[0][0], corners[1][0]), y: Math.min(corners[0][1], corners[1][1]),
+          w: Math.abs(corners[1][0] - corners[0][0]), h: Math.abs(corners[1][1] - corners[0][1]) };
+      }
       button(node, kind === 'section' ? 'Сектор ' + sections.get(key).properties.name
         : kind === 'standing' ? zoneLabel(zones.get(key).properties)
         : label((kind === 'table' ? tables : seats).get(key).properties, kind === 'table'));
     }
     numbers = element('g', { class: 'svg-seat-numbers', 'aria-hidden': 'true' });
     svg.appendChild(numbers);
+    // Щриховката на зоната е в същото синьо като на WebGL картата; по един
+    // шаблон за покой, посочване и избор (шаблонът не сменя цвят с CSS).
+    const defs = element('defs', {});
+    for (const [id, bg] of [['standing-hatch', '#DCE8F8'], ['standing-hatch-hover', '#C9DBF4'], ['standing-hatch-selected', '#A9C4EC'], ['standing-hatch-off', '#E3E7EE']]) {
+      const pattern = element('pattern', { id, width: 14, height: 14, patternUnits: 'userSpaceOnUse', patternTransform: 'scale(1.6)' });
+      pattern.append(element('rect', { width: 14, height: 14, fill: bg }));
+      if (id !== 'standing-hatch-off') for (const o of [-14, 0, 14]) pattern.append(element('path', { d: 'M' + o + ' 14L' + (o + 14) + ' 0', stroke: 'rgba(21,61,138,.30)', 'stroke-width': 1.4 }));
+      defs.append(pattern);
+    }
+    svg.insertBefore(defs, svg.firstChild);
+    const zone = Array.from(zones.values())[0];
+    if (zone && nodes.has(zone.properties.mk)) {
+      standingPin = buildPin(zone.properties);
+      svg.appendChild(standingPin);
+      updatePin(zone.properties);
+    }
     fullBounds = { x: 0, y: 0, w: 2500, h: 2500 };
     homeCamera = fitHome(); camera = { ...homeCamera };
     const toolbar = document.createElement('div'); toolbar.className = 'svg-map-toolbar';
@@ -339,6 +394,14 @@ window.SeatMap = (function () {
     clearSeatSelection() { selected.clear(); schedule(); },
     selectTables(keys) { selectedTables = new Set(list(keys)); schedule(); },
     clearTableSelection() { selectedTables.clear(); schedule(); },
+    selectStanding(on) { selectedStanding = !!on; schedule(); },
+    frameStanding() {
+      if (!standingBox) return;
+      active = 'standing';
+      const pad = standingBox.w * .12;
+      setCamera(fit({ x: standingBox.x - pad, y: standingBox.y - pad, w: standingBox.w + pad * 2, h: standingBox.h + pad * 2 }));
+      emit('moveend');
+    },
     highlightSeats(keys) { suggested = new Set(list(keys)); schedule(); },
     clearSeatHighlights() { suggested.clear(); schedule(); },
     highlight(key) { highlighted = key; schedule(); },

@@ -449,21 +449,19 @@ window.ArenaSeatView = (function () {
       tube([stageCenter-rearMaskWidth/2,rearMaskHeight+.15,curtainFront-curtainDepth],
         [stageCenter+rearMaskWidth/2,rearMaskHeight+.15,curtainFront-curtainDepth],.085);
       const tables = v.tables.features;
-      const linen = new T.MeshStandardMaterial({color:0xfaf7ef, roughness:.96});
       const black = new T.MeshStandardMaterial({color:0x171b20, roughness:.4, metalness:.55});
-      const upholstery = new T.MeshStandardMaterial({color:0xded5bf, roughness:.88});
-      const foliage = new T.MeshStandardMaterial({color:0x354f35, roughness:.9});
-      const petal = new T.MeshStandardMaterial({color:0xf5e5da, roughness:.9});
-      const glass = new T.MeshPhysicalMaterial({color:0xe8f3ff, roughness:.08, metalness:.05, transparent:true, opacity:.36, depthWrite:false, side:T.DoubleSide});
       function merged(parts) {
         const result=new T.BufferGeometry(), geometries=parts.map(([geo,x=0,y=0,z=0,rx=0,ry=0,rz=0])=>{
           geo.rotateX(rx);geo.rotateY(ry);geo.rotateZ(rz);geo.translate(x,y,z);
           const flat=geo.index?geo.toNonIndexed():geo; if(flat!==geo)geo.dispose();return flat;
         });
-        for(const name of ['position','normal']){
+        for(const name of ['position','normal','uv','color']){
+          // uv и color се копират само ако ги има във всички части.
+          if(!geometries.every(g=>g.attributes[name]))continue;
+          const size=geometries[0].attributes[name].itemSize;
           const data=new Float32Array(geometries.reduce((n,g)=>n+g.attributes[name].array.length,0));let offset=0;
           for(const g of geometries){data.set(g.attributes[name].array,offset);offset+=g.attributes[name].array.length;}
-          result.setAttribute(name,new T.BufferAttribute(data,3));
+          result.setAttribute(name,new T.BufferAttribute(data,size));
         }
         geometries.forEach(g=>g.dispose());return result;
       }
@@ -472,49 +470,144 @@ window.ArenaSeatView = (function () {
         positions.forEach((p,i)=>{matrix.position.set(p.x,p.y||0,p.z);matrix.rotation.set(0,p.angle||0,0);matrix.updateMatrix();mesh.setMatrixAt(i,matrix.matrix);});
         scene.add(mesh);return mesh;
       }
-      // Коктейлни маси за 6 души: малък плот на висок крак, покрит с плат, и два
-      // бар стола откъм зрителите. Сцената е към -z, затова столовете са на +z
-      // и гостите гледат към нея. Местата на масата са билети, не столове.
-      const TOP_R=.46, TOP_Y=1.05, EYE_Y=1.45, STOOLS=[[-.38,.82],[.38,.82]];
+      // Коктейлни маси за 6 души: висока черна метална маса БЕЗ покривка, цветя и
+      // вази, и два квадратни бар стола без възглавница откъм зрителите.
+      // Сцената е към -z, затова столовете са на +z и гостите гледат към нея.
+      // Местата на масата са билети, не столове.
+      // Столовете са „щъркели": седалката е на 0.78 м срещу плот на 1.07 м, а
+      // очите на седналия са ~0.75 м над седалката.
+      const TOP_R=.35, TOP_Y=1.07, SEAT_Y=.78, EYE_Y=SEAT_Y+.75, STOOLS=[[-.38,.82],[.38,.82]];
+      // Мат метал за столовете и колоната; плотът е гланциран лак по снимката
+      // на истинските ВИП маси.
+      const tableMetal = new T.MeshStandardMaterial({color:0x1b1e23, roughness:.52, metalness:.5});
+      const topGloss = new T.MeshStandardMaterial({color:0x0b0c0f, roughness:.16, metalness:.4});
+      resources.add(tableMetal);resources.add(topGloss);
       const tablePositions=tables.map(f=>({x:f.geometry.coordinates[0]*scale,z:-f.geometry.coordinates[1]*scale}));
-      // Всичко върху плота се вдига до височината му (обядвалните маси бяха по-ниски).
-      const lift=TOP_Y-.783;
-      const topPositions=tablePositions.map(p=>({x:p.x,z:p.z,y:lift}));
-      // Плат по плота: меки гънки и изрязан подгъв до пода, без прекъсване отгоре.
-      const clothPoints=[], clothNormals=[], clothIndices=[], segments=96, rings=12;
-      for(let j=0;j<=rings;j++)for(let i=0;i<=segments;i++){
-        const a=i/segments*Math.PI*2,t=j/rings,r=TOP_R+.03*t+Math.sin(a*24)*.016*Math.pow(t,1.4);
-        clothPoints.push(Math.sin(a)*r,TOP_Y*(1-.92*t)+.006*Math.cos(a*24)*t,Math.cos(a)*r);
-        if(j<rings&&i<segments){const n=j*(segments+1)+i;clothIndices.push(n,n+segments+1,n+1,n+1,n+segments+1,n+segments+2);}
-      }
-      const skirt=new T.BufferGeometry();skirt.setAttribute('position',new T.Float32BufferAttribute(clothPoints,3));skirt.setIndex(clothIndices);skirt.computeVertexNormals();
-      linen.side=T.DoubleSide;
-      instances(merged([[new T.CylinderGeometry(TOP_R+.004,TOP_R+.004,.025,64),0,TOP_Y+.003],[skirt]]),linen,tablePositions);
       const floorChairs=v.seats.features.filter(f=>f.properties.el===0).map(f=>({x:f.geometry.coordinates[0]*scale,z:-f.geometry.coordinates[1]*scale,angle:0}));
-      const stoolSpots=[], glassSpots=[];
+      const stoolSpots=[];
       tables.forEach(f=>{const [x,y]=f.geometry.coordinates;
         for(const [dx,dz] of STOOLS)stoolSpots.push({x:x*scale+dx,z:-y*scale+dz,angle:0});
-        // Две чаши върху плота, встрани от цветята.
-        for(const dx of [-.42,.18])glassSpots.push({x:x*scale+dx,y:lift,z:-y*scale+.12});
       });
       const floorParts=[[new T.BoxGeometry(.46,.045,.42),0,.445],[roundedBox(.44,.25,.035,.065),0,.72,.185]];
       for(const x of [-.19,.19]){floorParts.push([new T.CylinderGeometry(.013,.013,.78,6),x,.39,.18],[new T.CylinderGeometry(.013,.013,.43,6),x,.215,-.18]);}
       instances(merged(floorParts),black,floorChairs);
-      // Бар стол: тъмен крак, плоска основа, стъпенка и меко кръгло седло.
-      instances(merged([[new T.CylinderGeometry(.021,.021,.7,10),0,.37],[new T.CylinderGeometry(.19,.21,.03,28),0,.015],[new T.TorusGeometry(.15,.011,6,28),0,.3,0,Math.PI/2]]),black,stoolSpots);
-      instances(merged([[new T.CylinderGeometry(.19,.19,.075,28),0,.775]]),upholstery,stoolSpots);
-      const goblet=new T.LatheGeometry([new T.Vector2(.008,0),new T.Vector2(.033,.02),new T.Vector2(.048,.068),new T.Vector2(.041,.12)],16);
-      instances(merged([[new T.CylinderGeometry(.038,.038,.006,16),.12,.815,-.12],[new T.CylinderGeometry(.004,.004,.095,8),.12,.862,-.12],[goblet,.12,.91,-.12]]),glass,glassSpots);
-      instances(merged([[new T.TorusGeometry(.041,.002,5,20),.12,1.03,-.12,Math.PI/2]]),linen,glassSpots);
-      // Ниска ваза: погледът над плота остава свободен.
-      instances(merged([[new T.CylinderGeometry(.09,.065,.12,20),0,.85]]),upholstery,topPositions);
-      const leaves=[],flowers=[];
-      for(let i=0;i<9;i++){const a=i*2.4,r=i? .11:0,x=Math.cos(a)*r,z=Math.sin(a)*r,y=.995+(i%3)*.017;
-        const leaf=new T.SphereGeometry(.07,8,6);leaf.scale(1,.35,1.6);leaves.push([leaf,x,.95,z,0,a]);
-        flowers.push([new T.SphereGeometry(.026,8,6),x,y+.012,z]);
-        for(let k=0;k<5;k++){const angle=k*Math.PI*2/5,geo=new T.SphereGeometry(.028,8,6);geo.scale(1,.45,1);flowers.push([geo,x+Math.sin(angle)*.025,y,z+Math.cos(angle)*.025]);}
+      // Маса: гланциран плот, една права колона и кръгла основа - едно слято
+      // тяло за всичките 180 маси (instancing), без отделни мрежи.
+      const tableTops=instances(merged([[new T.CylinderGeometry(TOP_R,TOP_R,.035,32),0,TOP_Y-.0175]]),topGloss,tablePositions);
+      instances(merged([
+        [new T.CylinderGeometry(.045,.045,.04,12),0,TOP_Y-.055],
+        [new T.CylinderGeometry(.026,.026,TOP_Y-.1,10),0,(TOP_Y-.1)/2+.04],
+        [new T.CylinderGeometry(.2,.22,.04,24),0,.02]
+      ]),tableMetal,tablePositions);
+      // Бар стол: квадратна метална седалка без възглавница на четири прави
+      // крака от тънка квадратна тръба и квадратна рамка за краката на 0.30 м.
+      const stoolParts=[[new T.BoxGeometry(.34,.03,.34),0,SEAT_Y-.015]];
+      for(const sx of [-1,1])for(const sz of [-1,1])stoolParts.push([new T.BoxGeometry(.02,SEAT_Y-.03,.02),sx*.15,(SEAT_Y-.03)/2,sz*.15]);
+      for(const sz of [-1,1])stoolParts.push([new T.BoxGeometry(.28,.014,.014),0,.3,sz*.15]);
+      for(const sx of [-1,1])stoolParts.push([new T.BoxGeometry(.014,.014,.28),sx*.15,.3,0]);
+      instances(merged(stoolParts),tableMetal,stoolSpots);
+
+      // ---- Консумацията към масата (meta.vipTableIncludes) ----
+      // Една бутилка премиум алкохол 700 мл, 5 бутилки минерална вода 330 мл и
+      // 5 кена Vidas 250 мл - точно колкото са в офертата и нищо друго. Само тук:
+      // на картата масите остават голи. Профилите са въртене на гладка крива
+      // (LatheGeometry), не купчина цилиндри. Две нива на детайл: масата, от
+      // която гледаш, е с 24 сегмента, останалите 179 - с 10, като instancing.
+      // Среда за отраженията има само за напитките и плота: общата светлина на
+      // залата остава същата.
+      const envScene=new T.Scene();
+      envScene.add(new T.Mesh(new T.BoxGeometry(30,16,30),new T.MeshBasicMaterial({color:0x5b6573,side:T.BackSide})));
+      const envPanel=(w,h,x,y,z,k,ry=0,rx=0)=>{const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({color:new T.Color().setScalar(k),side:T.DoubleSide}));m.position.set(x,y,z);m.rotation.set(rx,ry,0);envScene.add(m);};
+      envPanel(10,10,0,7.5,0,9,0,Math.PI/2);          // ключов панел отгоре
+      envPanel(3,8,-12,3,0,5,Math.PI/2);               // мека странична лента
+      envPanel(4,6,10,2,5,1.6,-Math.PI/2);             // слаб пълнеж
+      envPanel(30,30,0,-7.9,0,.08,0,Math.PI/2);        // тъмен под
+      const pmrem=new T.PMREMGenerator(renderer),envTarget=pmrem.fromScene(envScene,.04);
+      pmrem.dispose();resources.add(envTarget);envScene.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
+      topGloss.envMap=envTarget.texture;topGloss.envMapIntensity=.7;
+      const lathe=(pts,seg,hex)=>{const g=new T.LatheGeometry(pts.map(([r,y])=>new T.Vector2(r,y)),seg);
+        if(hex!=null){const c=new T.Color(hex),n=g.attributes.position.count,a=new Float32Array(n*3);for(let i=0;i<n;i++){a[i*3]=c.r;a[i*3+1]=c.g;a[i*3+2]=c.b;}g.setAttribute('color',new T.BufferAttribute(a,3));}
+        return g;};
+      // Крива рамо: квадрант (кръгло рамо) или S-плавен преход (дълъг конус).
+      const curve=(r0,r1,y0,y1,n,round)=>Array.from({length:n},(_,k)=>{const t=(k+1)/n;
+        return round?[r1+(r0-r1)*Math.cos(t*Math.PI/2),y0+(y1-y0)*Math.sin(t*Math.PI/2)]
+                    :[r1+(r0-r1)*(1-t*t*(3-2*t)),y0+(y1-y0)*t];});
+      const bandTexture=(draw)=>{const c=document.createElement('canvas');c.width=128;c.height=64;draw(c.getContext('2d'),128,64);
+        const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;resources.add(t);return t;};
+      const spiritLabel=bandTexture((g,w,h)=>{g.fillStyle='#efe6d2';g.fillRect(0,0,w,h);g.fillStyle='#b8923f';g.fillRect(0,4,w,3);g.fillRect(0,h-7,w,3);
+        g.fillStyle='#7d6a43';g.fillRect(w*.3,h*.42,w*.4,4);g.fillRect(w*.38,h*.56,w*.24,3);});
+      const waterLabel=bandTexture((g,w,h)=>{g.fillStyle='#f6fafc';g.fillRect(0,0,w,h);g.fillStyle='#1d5fae';g.fillRect(0,h*.42,w,h*.2);g.fillStyle='#8fbfe0';g.fillRect(0,h*.36,w,3);g.fillRect(0,h*.66,w,3);});
+      const canTexture=bandTexture((g,w,h)=>{g.fillStyle='#17996f';g.fillRect(0,0,w,h);const sw=g.createLinearGradient(0,h,w,0);
+        sw.addColorStop(0,'rgba(255,255,255,0)');sw.addColorStop(.45,'rgba(255,255,255,.34)');sw.addColorStop(.62,'rgba(255,255,255,0)');
+        g.fillStyle=sw;g.fillRect(0,0,w,h);g.fillStyle='rgba(8,70,50,.5)';g.fillRect(0,0,w,5);g.fillRect(0,h-5,w,5);});
+      const mat=o=>{const m=new T.MeshStandardMaterial(Object.assign({envMap:envTarget.texture},o));resources.add(m);return m;};
+      const spiritGlass=mat({color:0x3a2a18,roughness:.08,metalness:0,transparent:true,opacity:.9,envMapIntensity:1.4});
+      const waterGlass=mat({color:0xd6ecf5,roughness:.05,metalness:0,transparent:true,opacity:.45,envMapIntensity:1.4,depthWrite:false});
+      const capMetal=mat({vertexColors:true,metalness:.75,roughness:.32,envMapIntensity:1.2});
+      const spiritLabelMat=mat({map:spiritLabel,roughness:.7,side:T.DoubleSide});
+      const waterLabelMat=mat({map:waterLabel,roughness:.6,side:T.DoubleSide});
+      const canBodyMat=mat({map:canTexture,roughness:.38,metalness:.35,envMapIntensity:.8});
+      // Бутилка 700 мл (кехлибар): тяло 0.042, кръгло рамо, гърло, пръстен, капачка.
+      const spiritProfile=[[0,0],[.036,0],[.042,.004],[.042,.17],...curve(.042,.0125,.17,.215,6,true),[.0125,.255],[.015,.256],[.015,.262],[0,.262]];
+      // Вода 330 мл: дълъг плавен конус до гърлото 0.0115, капачка 0.0135.
+      const waterProfile=[[0,0],[.027,0],[.031,.003],[.031,.12],...curve(.031,.0115,.12,.175,6,false),[.0115,.19],[0,.19]];
+      // Кен Vidas 250 мл: купол на дъното, права стена, стесняване и ръб.
+      const canProfile=[[0,.004],[.0185,.0015],[.022,0],[.0265,.008],[.0265,.122],[.0225,.132],[.023,.135],[.0195,.135],[0,.133]];
+      const labelBand=(r,y0,y1,seg,full)=>{const g=new T.CylinderGeometry(r,r,y1-y0,seg,1,true,full?0:Math.PI-1.22,full?Math.PI*2:2.44);g.translate(0,(y0+y1)/2,0);return g;};
+      // Подредба, събрана в средата на плота (радиус 0.35, нищо по-близо от 0.08 м до ръба):
+      // бутилката в средата, водите дъга зад нея към сцената, кеновете дъга пред нея.
+      // Цялата подредба е ЕДНА мрежа на тип материал (11 предмета са запечени в
+      // геометрията, с малък завой на всеки), а маса = една инстанция със свой
+      // завой: така напитките са общо 6 извиквания за рисуване на ниво.
+      const SWEEP=[-.9,-.45,0,.45,.9];
+      const WATERS=SWEEP.map(a=>[Math.sin(a)*.17,-Math.cos(a)*.17]);
+      const CANS=SWEEP.map(a=>[Math.sin(a)*.2,Math.cos(a)*.2]);
+      // Завоят на предмета (запечен) и на цялата подредба (от номера на масата).
+      const itemYaw=j=>(((j*7)%5)-2)*.2,tableYaw=t=>(((t*37)%11)-5)*.05;
+      const bottle={
+        glass:seg=>lathe(spiritProfile,seg),
+        label:seg=>labelBand(.0425,.06,.13,seg,false),
+        metal:seg=>[lathe([[0,.262],[.016,.262],[.016,.298],[.0145,.3],[0,.3]],seg,0x15161a),lathe([[.0165,.266],[.0165,.2695],[.0155,.2695],[.0155,.266]],seg,0xc9a24a)]};
+      const water={
+        glass:seg=>lathe(waterProfile,seg),
+        label:seg=>labelBand(.0315,.05,.095,seg,true),
+        metal:seg=>[lathe([[0,.19],[.0135,.19],[.0135,.2],[.0125,.205],[0,.205]],seg,0x1d5fae)]};
+      const can={body:seg=>labelBand(.0268,.012,.118,seg,true),metal:seg=>[lathe(canProfile,seg,0xc9ccd1)]};
+      const cluster=(seg,pick)=>{const parts=[];
+        const put=(make,at,k)=>at.forEach(([dx,dz],j)=>{const g=make(seg);(Array.isArray(g)?g:[g]).forEach(geo=>parts.push([geo,dx,0,dz,0,itemYaw(j+k),0]));});
+        pick(put);return merged(parts);};
+      function drinkSet(seg,tableIdx){
+        const spots=tableIdx.map(t=>({x:tablePositions[t].x,z:tablePositions[t].z,y:TOP_Y,angle:tableYaw(t)}));
+        return [
+          instances(cluster(seg,put=>put(bottle.glass,[[0,0]],0)),spiritGlass,spots),
+          instances(cluster(seg,put=>put(bottle.label,[[0,0]],0)),spiritLabelMat,spots),
+          instances(cluster(seg,put=>put(water.glass,WATERS,1)),waterGlass,spots),
+          instances(cluster(seg,put=>put(water.label,WATERS,1)),waterLabelMat,spots),
+          instances(cluster(seg,put=>put(can.body,CANS,7)),canBodyMat,spots),
+          // Метал: капачките на бутилките и целите кенове - една мрежа.
+          instances(cluster(seg,put=>{put(bottle.metal,[[0,0]],0);put(water.metal,WATERS,1);put(can.metal,CANS,7);}),capMetal,spots)];
       }
-      instances(merged(leaves),foliage,topPositions);instances(merged(flowers),petal,topPositions);
+      const allIdx=tables.map((_,i)=>i);
+      const lowSet=drinkSet(10,allIdx);
+      const highSet=drinkSet(24,[0]);
+      // Масата, от която гледаш, получава детайлния набор (24 сегмента);
+      // обикновената ѝ копия (10) се скрива с нулев мащаб. Работи се само при
+      // смяна на гледната точка, не на кадър.
+      let drinkOwn=-2;
+      const hideMatrix=new T.Object3D();hideMatrix.scale.set(0,0,0);hideMatrix.updateMatrix();
+      function lowAt(t,hide){
+        matrix.position.set(tablePositions[t].x,TOP_Y,tablePositions[t].z);matrix.rotation.set(0,tableYaw(t),0);matrix.updateMatrix();
+        for(const mesh of lowSet){mesh.setMatrixAt(t,hide?hideMatrix.matrix:matrix.matrix);mesh.instanceMatrix.needsUpdate=true;}
+      }
+      function setDrinkOwn(t){
+        if(t===drinkOwn)return;
+        if(drinkOwn>=0)lowAt(drinkOwn,false);
+        drinkOwn=t;
+        matrix.position.set(t>=0?tablePositions[t].x:0,TOP_Y,t>=0?tablePositions[t].z:0);matrix.rotation.set(0,t>=0?tableYaw(t):0,0);matrix.updateMatrix();
+        for(const mesh of highSet){mesh.visible=t>=0;if(t>=0){mesh.setMatrixAt(0,matrix.matrix);mesh.instanceMatrix.needsUpdate=true;}}
+        if(t>=0)lowAt(t,true);
+      }
+      setDrinkOwn(-1);
       // FOH occupies the intentional gap behind the middle floor block.
       box(8.8,.16,4.0,0,.08,24.2,black);
       box(5,.75,.8,0,.52,23.5,black);
@@ -560,6 +653,7 @@ window.ArenaSeatView = (function () {
         // Гледната точка на масата е от един от двата бар стола.
         if(currentTable){const [dx,dz]=STOOLS[chairPosition%STOOLS.length];camera.position.x+=dx;camera.position.z+=dz;}
         const direction=look.clone().sub(camera.position);homeYaw=Math.atan2(direction.x,-direction.z);homePitch=Math.atan2(direction.y,Math.hypot(direction.x,direction.z));
+        setDrinkOwn(currentTable?tables.indexOf(currentTable):-1);
         yaw=homeYaw;pitch=homePitch;fov=70;tableChair.hidden=!currentTable;
         const име=currentTable?currentTable.properties.name+' · стол '+(chairPosition+1):viewpoint.selectedOptions[0].textContent;
         overlay.setAttribute('aria-label',име);schedule();

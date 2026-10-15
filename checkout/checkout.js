@@ -83,8 +83,17 @@
     write(CART_KEY, cart);
   }
 
+  // Правостоящите са най-много един ред и само зоната, която залата познава:
+  // иначе количка с чужд mk би минала като „билети".
+  function standingValid(items) {
+    const rows = items.filter((item) => item && item.type === "standing");
+    if (!rows.length) return true;
+    const zones = (window.VENUE && window.VENUE.standing && window.VENUE.standing.features) || [];
+    return rows.length === 1 && zones.some((f) => f.properties.mk === rows[0].mk && f.properties.offsale !== true);
+  }
+  if (cart && Array.isArray(cart.items) && !standingValid(cart.items)) cart = null;
   if (cart && (!Array.isArray(cart.items) || !cart.items.length || cart.items.length>10 || cart.items.reduce((sum,item)=>sum+Number(item?.quantity || 0),0)>10 || cart.items.some(item=>
-    !item || !['seat','table'].includes(item.type) || !Number.isFinite(item.lineTotal) || item.lineTotal<=0 ||
+    !item || !['seat','table','standing'].includes(item.type) || !Number.isFinite(item.lineTotal) || item.lineTotal<=0 ||
     !Number.isInteger(item.quantity) || item.quantity<1 || item.quantity>10
   ))) cart=null;
 
@@ -543,7 +552,7 @@
               <p class="success-label">Вашият избор</p>
               <div class="success-timeline">
                 <div class="is-done"><i>✓</i><strong>Начин на плащане</strong><span>${safe(METHODS[state.paymentMethod].label)}</span></div>
-                <div class="is-done"><i>✓</i><strong>Билети</strong><span>${ticketCount()} ${ticketCount() === 1 ? "избрано място" : "избрани места"}</span></div>
+                <div class="is-done"><i>✓</i><strong>Билети</strong><span>${ticketCount()} ${(cart?.items || []).some((item) => item.type === "standing") ? (ticketCount() === 1 ? "билет" : "билета") : ticketCount() === 1 ? "избрано място" : "избрани места"}</span></div>
                 <div><i></i><strong>Дата на концерта</strong><span>7 ноември 2026</span></div>
               </div>
             </section>
@@ -587,7 +596,14 @@
     renderedView = view;
   }
 
+  // Правостоящи: един ред с броя билети. Заглавието носи „× N", подзаглавието -
+  // цената на билет, защото мястото не е номерирано.
+  function itemTitle(item) {
+    if (item.type === "standing") return (item.sector || item.name || "Правостоящи") + " × " + Math.max(1, Number(item.quantity) || 1);
+    return item.sector || "Избрано място";
+  }
   function itemSubtitle(item) {
+    if (item.type === "standing") return "Без номерирано място · " + money(cents(item.unitPrice != null ? item.unitPrice : item.lineTotal / Math.max(1, Number(item.quantity) || 1))) + " на билет";
     if (item.type === "table") return "Цяла маса · " + Math.max(1, Number(item.quantity) || TABLE_SEATS_FALLBACK) + " места";
     const details = [];
     if (item.row) details.push("ред " + item.row);
@@ -601,10 +617,10 @@
     const items = cart.items.map(function (item) {
       return `
         <article class="summary-item">
-          <strong>${safe(item.sector || "Избрано място")}</strong>
+          <strong>${safe(itemTitle(item))}</strong>
           <span>${safe(itemSubtitle(item))}</span>
           <span class="summary-item__price">${money(cents(item.lineTotal))}</span>
-          <button class="summary-remove" data-remove="${safe(item.id)}" aria-label="Премахнете ${safe(item.sector || "мястото")} · ${safe(itemSubtitle(item))}">
+          <button class="summary-remove" data-remove="${safe(item.id)}" aria-label="Премахнете ${safe(itemTitle(item))} · ${safe(itemSubtitle(item))}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"></path></svg>
           </button>
         </article>`;

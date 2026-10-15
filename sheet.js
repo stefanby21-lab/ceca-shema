@@ -49,6 +49,16 @@
     box.innerHTML='<p class="tier-sheet__head tier-sheet__head--2">Цели маси, '+tableSeats+' места</p><div class="tier-sheet__ramp">'
       +levels.map(l=>'<button type="button" data-lvl="'+l.level+'" style="background:'+l.color+'" aria-label="Покажете масите по '+l.label+'"><i>'+l.label+'</i></button>').join('')+'</div>'
       +(naMqsto.length?'<p class="tier-sheet__note">'+Math.min.apply(null,naMqsto)+'-'+Math.max.apply(null,naMqsto)+' € на място</p>':'');
+    // Правостоящите са отделен продукт до масите: една кратка стойка в синьото на зоната.
+    const standing=window.VENUE.standing&&window.VENUE.standing.features&&window.VENUE.standing.features[0],
+          sp=standing&&standing.properties;
+    if(sp&&!sp.offsale&&Number(sp.eur)>0){
+      const b=document.createElement('button');b.type='button';b.className='tier-sheet__standing';
+      b.innerHTML='<i aria-hidden="true"></i><b>'+sp.name+' · '+Math.round(sp.eur)+' €</b>';
+      b.setAttribute('aria-label','Покажете зоната '+sp.name+', '+Math.round(sp.eur)+' € на билет');
+      b.addEventListener('click',()=>{openTiers(false);if(window.__standingGo)window.__standingGo();});
+      box.append(b);
+    }
     box.querySelector('.tier-sheet__ramp').addEventListener('click',e=>{
       const b=e.target.closest('button[data-lvl]');if(!b)return;
       openTiers(false);
@@ -228,7 +238,8 @@
     const groups=new Map();
     for(const row of document.querySelectorAll('.pk-row')){
       const sector=row.querySelector('.pk-sector')?.textContent||'',
-            seat=(row.querySelector('.pk-seat')?.textContent||'').trim(),
+            // Правостоящи: в чипа стои само броят билети, цената на билет е в списъка.
+            seat=row.dataset.kind==='standing'?row.dataset.qty+(row.dataset.qty==='1'?' билет':' билета'):(row.querySelector('.pk-seat')?.textContent||'').trim(),
             price=row.querySelector('.pk-price')?.textContent||'',
             match=seat.match(/^ред\s+([^,]+),\s*място\s+(\d+)$/),
             key=sector+'|'+(match?'ред '+match[1]:seat);
@@ -346,7 +357,8 @@
     action.textContent=count?'Продължете →':'Препоръчайте ми места';
     // Не хареса ли препоръката, следващата е на един тап. Досега трябваше да
     // махнеш билета, да отвориш панела и чак там да натиснеш - три тапа.
-    redo.hidden=!count;
+    // Само правостоящи: „други места" би ги заменило с места - бутонът се скрива.
+    redo.hidden=!count||!!(window.__standingOnly&&window.__standingOnly());
     redo.textContent=window.__tablesSelected&&window.__tablesSelected()?'Друга маса':'Други места';
     action.setAttribute('aria-label',count?'Продължете към покупка на '+count+' билета':'Препоръчайте ми свободни места');
     sheet.classList.toggle('has-pick',count>0);
@@ -396,7 +408,8 @@
   window.addEventListener('arena:seat-picked',e=>{
     const next=Array.from(document.querySelectorAll('.pk-row')).map(row=>row.textContent);
     const added=next.some(item=>!selected.includes(item));selected=next;syncSummary();
-    if(active&&(added||!count))go('peek');
+    // Стъпката за броя правостоящи е промяна на ред, не нов билет: листът остава отворен.
+    if(active&&(added||!count)&&!(e.detail&&e.detail.stay))go('peek');
   });
   window.addEventListener('arena:whole-hall',()=>go('peek'));
   window.addEventListener('arena:map-focus',()=>go('peek'));

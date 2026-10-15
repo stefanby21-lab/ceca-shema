@@ -64,7 +64,14 @@
       // за всичките ѝ места. Влиза в същия списък „Избрано" като един ред.
       selT = [],
       P = { min: S, max: g };
+    // Правостоящите са зона без място: избира се колко билета, не кои. Броят е
+    // един ред в списъка и влиза в същия лимит от 10 билета като масите.
+    let standingQty = 0;
     const MAX_SELECTED_SEATS = 10;
+    const standingFeature = ((o.standing && o.standing.features) || [])[0],
+      standingProps = standingFeature && standingFeature.properties,
+      STANDING_MK = standingProps ? standingProps.mk : "z:Standing",
+      STANDING_NAME = (standingProps && standingProps.name) || "Правостоящи";
     // Местата на една маса идват от данните (свойството seats). 6 е само
     // резервата, ако го няма: масите на концерта са коктейлни, за 6 души.
     const TABLE_SEATS_FALLBACK = 6;
@@ -148,6 +155,7 @@
       onSeatClick: J,
       onTableClick: Ie2,
       onTablesZone: Ze2,
+      onStandingClick: Sg,
       onBackgroundClick: C,
     })),
       a(window.SeatMap, "setFeesMode") && window.SeatMap.setFeesMode(i.feesIncluded),
@@ -213,6 +221,23 @@
     }),
       (window.__tablesSelected = function () {
         return selT.length;
+      }),
+      // Само правостоящи: „други места" там би заменило зоната с места, затова
+      // долният лист скрива бутона.
+      (window.__standingOnly = function () {
+        return standingQty > 0 && !sel.length && !selT.length;
+      }),
+      // Бутонът от легендата води към зоната и предлага да се избере.
+      (window.__standingGo = function () {
+        a(window.SeatMap, "frameStanding") && window.SeatMap.frameStanding();
+        a(window.UI, "notify") &&
+          window.UI.notify({
+            text: STANDING_NAME + " · " + Math.round(standingPrice()) + " € на билет.",
+            actionLabel: "Изберете",
+            onAction: function () {
+              standingQty || Sg();
+            },
+          });
       }));
     // Портата питаше само за места, а масите са отделен продукт: цяла
     // купува се цяла. Който търси маса, нямаше откъде да разбере, че има.
@@ -386,8 +411,9 @@
     }
     let gateQty = 0;
     function gateTables() {
-      const free = ((o.tables && o.tables.features) || []).filter((f) => f.properties.sold !== !0);
-      if (!free.length) return;
+      const free = ((o.tables && o.tables.features) || []).filter((f) => f.properties.sold !== !0),
+        standingOk = !!standingProps && standingProps.offsale !== !0 && standingProps.sold !== !0;
+      if (!free.length && !standingOk) return;
       const levels = (o.meta && o.meta.tableLevels) || [],
         price = (f) => (i.feesIncluded ? f.properties.eurAll : f.properties.eur),
         min = Math.min.apply(null, free.map(price).filter((v) => v != null)),
@@ -421,13 +447,24 @@
         }
         const box = document.createElement("div");
         box.className = "gate-tables";
+        // Правостоящите са втората карта в същия ред: същият вид, синият цвят
+        // на зоната вместо стълбицата на масите.
         box.innerHTML =
-          '<button type="button" class="gate-tables__btn">' +
-          '<span class="gate-tables__ramp" aria-hidden="true">' +
-          levels.map((l) => '<i style="background:' + l.color + '"></i>').join("") +
-          '</span><span class="gate-tables__txt"><b>Или цяла маса за ' + TABLE_SEATS + ' души</b>' +
-          "<i>от " + Math.round(min) + " € за маса, " + Math.round(perSeat) + " € на място</i></span>" +
-          '<span class="gate-tables__go" aria-hidden="true">→</span></button>';
+          (free.length
+            ? '<button type="button" class="gate-tables__btn">' +
+              '<span class="gate-tables__ramp" aria-hidden="true">' +
+              levels.map((l) => '<i style="background:' + l.color + '"></i>').join("") +
+              '</span><span class="gate-tables__txt"><b>Или цяла маса за ' + TABLE_SEATS + ' души</b>' +
+              "<i>от " + Math.round(min) + " € за маса, " + Math.round(perSeat) + " € на място</i></span>" +
+              '<span class="gate-tables__go" aria-hidden="true">→</span></button>'
+            : "") +
+          (standingOk
+            ? '<button type="button" class="gate-tables__btn gate-standing__btn">' +
+              '<span class="gate-tables__ramp" aria-hidden="true"><i></i></span>' +
+              '<span class="gate-tables__txt"><b>Или ' + STANDING_NAME.toLowerCase() + " · " + Math.round(standingPrice()) + " €</b>" +
+              "<i>без номерирано място</i></span>" +
+              '<span class="gate-tables__go" aria-hidden="true">→</span></button>'
+            : "");
         card.insertBefore(box, card.querySelector(".gate-continue"));
         // На тесен екран картата пак може да не се събере. Тогава долният ръб
         // избледнява, за да се види, че под него има още - иначе картата
@@ -436,15 +473,28 @@
         card.addEventListener("scroll", more, { passive: true });
         new ResizeObserver(more).observe(card);
         more();
-        box.querySelector("button").addEventListener("click", function () {
-          // Излизането през масите пропускаше избрания брой и „препоръчай"
-          // после връщаше ЕДНО място. Броят се пренася, а масата е за цялата компания.
-          ((i.quantity = gateQty || i.quantity || TABLE_SEATS), partySync(), chipSync());
+        const closeGate = () => {
           const veil = card.closest(".modal-overlay");
           veil && veil.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-          Ze2();
-          a(window.SeatMap, "frameTables") && window.SeatMap.frameTables();
-        });
+        };
+        const tableBtn = box.querySelector(".gate-tables__btn:not(.gate-standing__btn)");
+        tableBtn &&
+          tableBtn.addEventListener("click", function () {
+            // Излизането през масите пропускаше избрания брой и „препоръчай"
+            // после връщаше ЕДНО място. Броят се пренася, а масата е за цялата компания.
+            ((i.quantity = gateQty || i.quantity || TABLE_SEATS), partySync(), chipSync());
+            closeGate();
+            Ze2();
+            a(window.SeatMap, "frameTables") && window.SeatMap.frameTables();
+          });
+        const standingBtn = box.querySelector(".gate-standing__btn");
+        standingBtn &&
+          standingBtn.addEventListener("click", function () {
+            // Броят от първата стъпка е броят билета за правостоящи.
+            ((i.quantity = gateQty || i.quantity || 2), partySync(), chipSync());
+            closeGate();
+            Sg(STANDING_MK);
+          });
       }
     }
     // Брой редове, в които групата може да седне заедно при дадените филтри.
@@ -550,6 +600,7 @@
             if(!candidate){recommendationSeen.clear();candidate=alternatives[0];}
             recommendationSeen.add(candidate.mks.join('|'));
             ((selT = []),
+              (standingQty = 0),
               (sel = candidate.mks.slice(0, MAX_SELECTED_SEATS)),
               ne(sel[sel.length - 1]),
               a(window.SeatMap, "frameSeats") && window.SeatMap.frameSeats(sel.slice(), {}));
@@ -700,10 +751,66 @@
     function selectedTicketCount() {
       return (
         sel.length +
+        standingQty +
         selT.reduce(function (count, mk) {
           return count + tableSeats(tb2.get(mk));
         }, 0)
       );
+    }
+    function standingPrice() {
+      const q = standingProps || {};
+      return Number((i.feesIncluded ? (q.eurAll != null ? q.eurAll : q.eur) : q.eur) || 0);
+    }
+    // Колко билета за правостоящи още влизат: лимитът от 10 без самите
+    // правостоящи (те са на ред, който се променя), и капацитетът на зоната.
+    function standingMax() {
+      const others = selectedTicketCount() - standingQty,
+        cap = standingProps && Number(standingProps.capacity) > 0 ? Number(standingProps.capacity) : MAX_SELECTED_SEATS;
+      return Math.max(0, Math.min(MAX_SELECTED_SEATS - others, cap));
+    }
+    const standingAvailable = () => !!standingProps && standingProps.offsale !== !0 && standingProps.sold !== !0 && standingPrice() > 0;
+    // Правостоящи: първо докосване вдига толкова билета, колкото е броят от
+    // портата (до лимита), второ докосване маха зоната. Промяната на броя е
+    // стъпката в списъка.
+    function Sg() {
+      if (!standingAvailable()) {
+        a(window.UI, "notify") && window.UI.notify({ text: STANDING_NAME + " не са достъпни за избор." });
+        return;
+      }
+      if (standingQty) {
+        standingQty = 0;
+        ne(null);
+        return;
+      }
+      const room = standingMax();
+      if (room < 1) {
+        selectionLimitReached();
+        return;
+      }
+      const want = Math.max(1, i.quantity || 1),
+        n = Math.min(want, room);
+      (standingQty = n, (r = null), (X = []), ne(STANDING_MK));
+      a(window.UI, "notify") &&
+        window.UI.notify({
+          text:
+            n < want
+              ? STANDING_NAME + ": " + n + " билета. Можете да изберете най-много " + MAX_SELECTED_SEATS + " билета в една поръчка."
+              : STANDING_NAME + ": " + n + (n === 1 ? " билет" : " билета") + " по " + Math.round(standingPrice()) + " €.",
+        });
+    }
+    // Стъпката в списъка: 1..останалото място до лимита. Над него - същото
+    // предупреждение като при местата и масите, броят не се променя.
+    function standingStep(n) {
+      if (!standingQty) return;
+      n = Math.floor(Number(n) || 0);
+      if (n < 1) return;
+      if (n > standingMax()) {
+        selectionLimitReached();
+        return;
+      }
+      standingQty = n;
+      // Вторият аргумент: листът на телефон не се затваря при всяко „+".
+      ne(STANDING_MK, !0);
     }
     function selectionLimitReached() {
       warn("Можете да изберете най-много " + MAX_SELECTED_SEATS + " билета в една поръчка. Една маса е за " + TABLE_SEATS + " души.", "Продължете", kupi);
@@ -935,10 +1042,11 @@
     }
     // Прерисува избора. last = мястото, което току-що е пипнато; заради него
     // панелът показва изгледа точно от него, а не от първото в списъка.
-    function ne(last) {
-      if (!sel.length && !selT.length) {
+    function ne(last, quiet) {
+      if (!sel.length && !selT.length && !standingQty) {
         (a(window.SeatMap, "clearSeatSelection") && window.SeatMap.clearSeatSelection(),
           a(window.SeatMap, "clearTableSelection") && window.SeatMap.clearTableSelection(),
+          a(window.SeatMap, "selectStanding") && window.SeatMap.selectStanding(!1),
           window.UI.setSelected(null),
           a(window.UI, "showPicks") && window.UI.showPicks([], {}),
           window.UI.showSeatView(null),
@@ -955,10 +1063,12 @@
           }, 0) +
           selT.reduce(function (sum, mk) {
             return sum + cena(tb2.get(mk) || {});
-          }, 0),
+          }, 0) +
+          standingQty * cena(standingProps || {}),
         // Масата е един ред в списъка, но всичките ѝ места са билети в сметката.
         broi =
           sel.length +
+          standingQty +
           selT.reduce(function (n2, mk) {
             return n2 + tableSeats(tb2.get(mk));
           }, 0),
@@ -987,14 +1097,34 @@
                 eur: cena(q),
               };
             }),
+          )
+          .concat(
+            // Правостоящи: един ред с броя и цената на билет. kind/qty/max карат
+            // списъка да нарисува стъпката (- / +) вместо „от мястото".
+            standingQty
+              ? [
+                  {
+                    mk: STANDING_MK,
+                    sector: STANDING_NAME,
+                    seat: standingQty + (standingQty === 1 ? " билет" : " билета") + " · " + Math.round(standingPrice()) + " € / билет",
+                    eur: standingQty * standingPrice(),
+                    kind: "standing",
+                    qty: standingQty,
+                    max: standingMax(),
+                  },
+                ]
+              : [],
           );
-      // Списъкът с билетите: по един ред на място и по един на маса.
+      // Списъкът с билетите: по един ред на място, на маса и на правостоящи.
       a(window.UI, "showPicks") &&
         window.UI.showPicks(redove, {
           total: tot,
           count: broi,
           onRemove: function (mk) {
-            String(mk).indexOf("t:") === 0 ? Ie2(mk) : J(mk);
+            mk === STANDING_MK ? Sg() : String(mk).indexOf("t:") === 0 ? Ie2(mk) : J(mk);
+          },
+          onQuantity: function (mk, n) {
+            mk === STANDING_MK && standingStep(n);
           },
           onClearAll: function () {
             typeof window.__clearSelection == "function" && window.__clearSelection();
@@ -1007,7 +1137,8 @@
           },
         });
       (a(window.SeatMap, "selectSeats") && window.SeatMap.selectSeats(sel.slice()),
-        a(window.SeatMap, "selectTables") && window.SeatMap.selectTables(selT.slice()));
+        a(window.SeatMap, "selectTables") && window.SeatMap.selectTables(selT.slice()),
+        a(window.SeatMap, "selectStanding") && window.SeatMap.selectStanding(standingQty > 0));
       // Тихо потвърждение: човек вижда, че тапът е хванат и колко места държи.
       if (sel.length && a(window.UI, "notify")) {
         const q = h.get(last) || h.get(sel[sel.length - 1]) || {},
@@ -1021,8 +1152,23 @@
         });
       }
       // Картата долу описва последното пипнато - място или маса.
-      const tMk = String(last || "").indexOf("t:") === 0 ? last : !sel.length && selT.length ? selT[selT.length - 1] : null;
-      if (tMk) {
+      const stLast = standingQty > 0 && (last === STANDING_MK || (!sel.length && !selT.length)),
+        tMk = stLast ? null : String(last || "").indexOf("t:") === 0 ? last : !sel.length && selT.length ? selT[selT.length - 1] : null;
+      if (stLast) {
+        ((r = null),
+          a(window.SeatMap, "clearSeatHighlights") && window.SeatMap.clearSeatHighlights(),
+          window.UI.setSelected(null, STANDING_NAME),
+          window.UI.showSeatView({
+            name: STANDING_NAME,
+            title: STANDING_NAME,
+            subtitle: "Зона без номерирани места · цената е на билет",
+            seatLabel: standingQty + (standingQty === 1 ? " билет" : " билета"),
+            eur: standingProps && standingProps.eur,
+            eurAll: standingProps && standingProps.eurAll,
+            tier: null,
+            bucketLabel: null,
+          }));
+      } else if (tMk) {
         const q = tb2.get(tMk) || {};
         ((r = null),
           a(window.SeatMap, "clearSeatHighlights") && window.SeatMap.clearSeatHighlights(),
@@ -1037,7 +1183,7 @@
             tier: null,
             bucketLabel: null,
           }));
-      } else {
+      } else if (sel.length) {
         const t = h.get(last || sel[sel.length - 1]) || h.get(sel[0]),
           n = M.get(t.s) || {},
           // Местата от един и същи сектор се изброяват заедно; от различни -
@@ -1076,7 +1222,7 @@
           // (Само „Препоръчай ми" мести камерата - там местата са другаде.)
           void 0);
       }
-      window.dispatchEvent(new CustomEvent("arena:seat-picked", { detail: { count: broi } }));
+      window.dispatchEvent(new CustomEvent("arena:seat-picked", { detail: { count: broi, stay: !!quiet } }));
     }
     function K(e) {
       const t = M.get(e);
@@ -1124,7 +1270,7 @@
           window.UI.setSelected(null),
           // Празна количка - пада и картичката на сектора. С избрани места тя
           // описва последното пипнато и си остава вярна.
-          sel.length || selT.length || window.UI.showSeatView(null),
+          sel.length || selT.length || standingQty || window.UI.showSeatView(null),
           sync()));
       };
       btn.addEventListener("click", cqlataZala);
@@ -1137,9 +1283,10 @@
         if (!mp) return;
         // На десктоп избраните места държат навигацията като постоянна двойка.
         // „Цялата зала“ променя само камерата и никога не изтрива билети.
-        const hasSelection = !!(sel.length || selT.length), away = otdalechen(mp);
+        const hasSelection = !!(sel.length || selT.length || standingQty), away = otdalechen(mp);
         btn.hidden = !away && !(desktop.matches && hasSelection);
-        if (preview) preview.hidden = !hasSelection;
+        // „Преглед" има смисъл само за място или маса: правостоящите нямат изглед.
+        if (preview) preview.hidden = !(sel.length || selT.length);
         if (away) vlqzal = !0;
       };
       // Отдалечи ли се човек сам - с колелцето или с два пръста - схемата вече
@@ -1154,7 +1301,7 @@
         // otdalechen() значи „камерата е ДАЛЕЧ от началния кадър", тоест вътре
         // в сектор. Чисти се, когато вече НЕ е далеч - върнала се е при цялата
         // зала.
-        if (!mp || !r || !vlqzal || otdalechen(mp) || sel.length || selT.length)
+        if (!mp || !r || !vlqzal || otdalechen(mp) || sel.length || selT.length || standingQty)
           return;
         ((vlqzal = !1), window.UI.showSeatView(null));
       };
@@ -1304,7 +1451,28 @@
             lineTotal: price,
           };
         }),
-        items = seatItems.concat(tableItems),
+        // Правостоящи: един ред с брой билети. mk/name/eur/eurAll са цената от
+        // данните; unitPrice и lineTotal са това, което чекаутът събира.
+        standingItems = standingQty
+          ? [
+              {
+                id: STANDING_MK,
+                type: "standing",
+                mk: STANDING_MK,
+                name: STANDING_NAME,
+                sector: STANDING_NAME,
+                sectionToken: "standing",
+                row: "",
+                seat: "",
+                quantity: standingQty,
+                eur: standingProps.eur,
+                eurAll: standingProps.eurAll,
+                unitPrice: checkoutPrice(standingProps),
+                lineTotal: Math.round(checkoutPrice(standingProps) * standingQty * 100) / 100,
+              },
+            ]
+          : [],
+        items = seatItems.concat(tableItems, standingItems),
         ticketCount = items.reduce(function (sum, item) {
           return sum + item.quantity;
         }, 0),
@@ -1332,11 +1500,11 @@
     }
     window.__onBuy = function () {
       if (!validSeatSelection(sel)) return;
-      if (!sel.length && !selT.length) {
+      if (!sel.length && !selT.length && !standingQty) {
         a(window.UI, "notify") && window.UI.notify({ text: "Първо изберете поне едно място." });
         return;
       }
-      const invalid = sel.some(mk=>{const q=h.get(mk);return !q || q.sold || q.offsale || !Number.isFinite(q.eur) || q.eur<=0;}) || selT.some(mk=>{const q=tb2.get(mk);return !q || q.sold || q.offsale || !Number.isFinite(q.eur) || q.eur<=0;});
+      const invalid = sel.some(mk=>{const q=h.get(mk);return !q || q.sold || q.offsale || !Number.isFinite(q.eur) || q.eur<=0;}) || selT.some(mk=>{const q=tb2.get(mk);return !q || q.sold || q.offsale || !Number.isFinite(q.eur) || q.eur<=0;}) || (standingQty>0 && (!standingAvailable() || standingQty>standingMax()));
       if(invalid){warn('Някое от избраните места вече не е достъпно.','Изберете други',function(){recommend(!1);});return;}
       try {
         sessionStorage.setItem(checkoutCartKey, JSON.stringify(checkoutCart()));
@@ -1353,9 +1521,16 @@
         const saved = new URLSearchParams(window.location.search).get("restore") === "1"
             ? JSON.parse(sessionStorage.getItem(checkoutCartKey) || "null") : selectionDraft,
           savedItems = saved && Array.isArray(saved.items) ? saved.items : [];
-        sel = []; selT = [];
+        sel = []; selT = []; standingQty = 0;
         let restoredCount = 0;
         for (const item of savedItems) {
+          if (item.type === "standing") {
+            // Правостоящите се връщат с толкова билета, колкото още влизат в лимита.
+            const room = Math.min(MAX_SELECTED_SEATS - restoredCount, standingProps ? Number(standingProps.capacity) || MAX_SELECTED_SEATS : 0);
+            const n = Math.min(Math.floor(Number(item.quantity) || 0), room);
+            if (standingAvailable() && !standingQty && n >= 1) { standingQty = n; restoredCount += n; }
+            continue;
+          }
           const isTable = item.type === "table", isSeat = item.type === "seat";
           const record = isTable ? tb2.get(item.id) : isSeat ? h.get(item.id) : null;
           const count = isTable ? tableSeats(record) : 1;
@@ -1364,10 +1539,10 @@
               target.includes(item.id) || restoredCount + count > MAX_SELECTED_SEATS) continue;
           target.push(item.id); restoredCount += count;
         }
-        if (sel.length || selT.length) {
-          i.quantity = sel.length || TABLE_SEATS;
+        if (sel.length || selT.length || standingQty) {
+          i.quantity = sel.length || (selT.length ? TABLE_SEATS : standingQty);
           y();
-          ne(selT.length ? selT[selT.length - 1] : sel[sel.length - 1]);
+          ne(selT.length ? selT[selT.length - 1] : sel.length ? sel[sel.length - 1] : STANDING_MK);
         }
         history.replaceState(null, "", window.location.pathname + window.location.hash);
       } catch (err) {}
@@ -1379,7 +1554,7 @@
       // ne() с празен избор изчиства и картата на мястото, и списъка - иначе
       // „Премахни всички" махаше местата, а редовете оставаха на екрана.
       const sekt = r,
-        imashe = sel.length || selT.length;
+        imashe = sel.length || selT.length || standingQty;
       (C(), ne());
       // Една стъпка назад, не чак до началото: щом е имало избрани места,
       // изгледът остава при сектора, който човекът разглежда. Празен ли е вече
@@ -1391,8 +1566,10 @@
     function C() {
       ((sel = []),
         (selT = []),
+        (standingQty = 0),
         (r = null),
         a(window.SeatMap, "clearTableSelection") && window.SeatMap.clearTableSelection(),
+        a(window.SeatMap, "selectStanding") && window.SeatMap.selectStanding(!1),
         a(window.SeatMap, "reset") && window.SeatMap.reset(),
         a(window.SeatMap, "clearHighlight") && window.SeatMap.clearHighlight(),
         a(window.SeatMap, "clearRevealed") && window.SeatMap.clearRevealed(),

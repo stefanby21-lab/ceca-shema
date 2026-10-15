@@ -257,6 +257,48 @@
       (c.appendChild(t("span", "pk-sector", l.sector)),
         c.appendChild(t("span", "pk-seat", l.seat)),
         u.appendChild(c));
+      // Правостоящи: няма място и няма изглед, затова вместо „от мястото"
+      // реда носи стъпка за броя билети (- / +). Редът е на две линии - на
+      // 320px името, цената и хикса не оставят място за стъпка до тях.
+      if (l.kind === "standing") {
+        u.classList.add("pk-row--standing");
+        ((u.dataset.kind = "standing"), (u.dataset.qty = String(l.qty)));
+        u.appendChild(t("span", "pk-price", O(l.eur)));
+        var x = t("button", "pk-x");
+        ((x.type = "button"),
+          x.setAttribute("aria-label", "Премахнете " + l.sector),
+          (x.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'),
+          x.addEventListener("click", function () {
+            typeof n.onRemove == "function" && n.onRemove(l.mk);
+          }),
+          u.appendChild(x));
+        var sp = t("div", "pk-step");
+        (sp.setAttribute("role", "group"), sp.setAttribute("aria-label", "Брой билети: " + l.sector));
+        var mi = t("button", "pk-step__b", "\u2212"),
+          va = t("span", "pk-step__v", String(l.qty)),
+          pl = t("button", "pk-step__b", "+");
+        ((mi.type = "button"),
+          (pl.type = "button"),
+          mi.setAttribute("aria-label", "Един билет по-малко"),
+          pl.setAttribute("aria-label", "Един билет повече"),
+          va.setAttribute("aria-live", "polite"),
+          // На минимума „-" е изключено: махането е хиксът. На максимума „+"
+          // остава натискаемо, за да обясни лимита, вместо да мълчи.
+          (mi.disabled = l.qty <= 1),
+          pl.setAttribute("aria-disabled", String(l.qty >= l.max)),
+          mi.addEventListener("click", function () {
+            typeof n.onQuantity == "function" && n.onQuantity(l.mk, l.qty - 1);
+          }),
+          pl.addEventListener("click", function () {
+            typeof n.onQuantity == "function" && n.onQuantity(l.mk, l.qty + 1);
+          }),
+          sp.appendChild(mi),
+          sp.appendChild(va),
+          sp.appendChild(pl),
+          u.appendChild(sp),
+          o.appendChild(u));
+        return;
+      }
       // Тънко бутонче „360° изглед" ВЛЯВО от цената: при местата остава видимо,
       // но временно е недостъпно. Където няма панорама (маси), бутонът остава
       // невидим, за да не се разместват цените и хиксовете по редовете.

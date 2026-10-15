@@ -30,7 +30,7 @@ const OFF_SECTORS = ['A.1.1', 'A.2.1', 'A.3.1', 'C.1.6', 'C.2.6', 'C.3.6', 'V.I.
   '200', '201', '202', '203', '204', '205', '206', '207', '209', '210', '211', '212', '213', '214'];
 
 test('meta describes the Ceca event with the assumed table size', () => {
-  assert.equal(V.meta.event, 'Цеца');
+  assert.equal(V.meta.event, 'CECA');
   assert.equal(V.meta.date, '2026-11-07');
   assert.equal(V.meta.venue, 'Арена 8888');
   assert.equal(V.meta.availabilitySource, 'demo');

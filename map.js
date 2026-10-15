@@ -140,6 +140,8 @@ window.SeatMap = (function () {
     ze = function () {},
     Jn = function () {},
     qn2 = function () {},
+    // Зоната за правостоящи: покупка без място, затова има свой клик.
+    Sn2 = function () {},
     Z,
     q,
     G,
@@ -544,23 +546,6 @@ window.SeatMap = (function () {
     }
     return (out.push(out[0]), [out]);
   }
-  // Потъмняване/изсветляване на цвят - за покривката и крака под плота.
-  function dk(hex, k) {
-    const h = String(hex || "").replace("#", "");
-    if (h.length !== 6) return hex || "#c9a227";
-    const n = parseInt(h, 16);
-    if (!isFinite(n)) return hex;
-    return (
-      "#" +
-      [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-        .map(function (v) {
-          return Math.max(0, Math.min(255, Math.round(v * k)))
-            .toString(16)
-            .padStart(2, "0");
-        })
-        .join("")
-    );
-  }
   // Външният ръб на масата (столчетата) спрямо радиуса на плота.
   const hx = 1.46;
   // Ъгълът на всяко бар столче от посоката „на юг" (към зрителите), в радиани.
@@ -614,125 +599,61 @@ window.SeatMap = (function () {
         r0 = typeof p.radius == "number" && p.radius > 0 ? p.radius : O * 1.2,
         r = isFinite(foot) && foot > 0 ? Math.min(r0, foot / hx) : r0,
         sold = p.sold === !0,
-        col = p.color || "#c9a227",
-        add = function (part, rad, base, top, color, sides) {
+        col = p.color || "#c9a227";
+      // Мат черен метал: това са коктейлни маси без покривка и без нищо отгоре.
+      // Плотът е ЕДИН плътен диск в цвета на ценовата категория (както преди);
+      // продадените са сиви, за да не се бъркат със свободните.
+      const METAL = "#2A2F37",
+        METAL_DARK = "#1D2128",
+        GREY = "#B9C1CC",
+        GREY_DARK = "#AEB6C2",
+        // Два квадратни бар стола откъм зрителите (сцената е на север, +y): „щъркели" -
+        // висока квадратна седалка без възглавница на тънки прави крака и квадратна
+        // рамка за краката.
+        sq = function (cx, cy, h) {
+          return [
+            [
+              [cx - h, cy - h],
+              [cx + h, cy - h],
+              [cx + h, cy + h],
+              [cx - h, cy + h],
+              [cx - h, cy - h],
+            ],
+          ];
+        },
+        sqRing = function (cx, cy, ho, hi) {
+          return [sq(cx, cy, ho)[0], sq(cx, cy, hi)[0].reverse()];
+        },
+        part = function (name, poly, base, top, color) {
           out.push({
             type: "Feature",
-            properties: { part: part, sold: sold, mk: p.mk, name: p.name, base: base, height: top, color: color },
-            geometry: { type: "Polygon", coordinates: Un(c[0], c[1], rad, sides || 24) },
+            properties: { part: name, sold: sold, mk: p.mk, name: p.name, base: base, height: top, color: color },
+            geometry: { type: "Polygon", coordinates: poly },
           });
         };
-      // Две бар столчета откъм зрителите: сцената е на север (+y), столчетата
-      // са на юг от масата, така че гостите гледат към сцената, а масата е
-      // пред тях - както на чертежа на залата.
-      const chair = sold ? "#B9C1CC" : "#5C6B86";
       for (let q = 0; q < TABLE_STOOLS; q++) {
-        const ang = -Math.PI / 2 + (q ? 1 : -1) * STOOL_SPREAD;
-        out.push({
-          type: "Feature",
-          properties: { part: "chair", sold: sold, mk: p.mk, name: p.name, base: 0, height: H * 0.7, color: chair },
-          geometry: {
-            type: "Polygon",
-            coordinates: Un(c[0] + Math.cos(ang) * r * 1.26, c[1] + Math.sin(ang) * r * 1.26, r * 0.2, 10),
-          },
+        const ang = -Math.PI / 2 + (q ? 1 : -1) * STOOL_SPREAD,
+          sx = c[0] + Math.cos(ang) * r * 1.26,
+          sy = c[1] + Math.sin(ang) * r * 1.26,
+          hs = r * 0.2,
+          lg = r * 0.025,
+          cl = sold ? GREY : METAL;
+        [-1, 1].forEach(function (dx) {
+          [-1, 1].forEach(function (dy) {
+            part("chair", sq(sx + dx * (hs - lg), sy + dy * (hs - lg), lg), 0, H * 0.74, cl);
+          });
         });
+        part("chair", sqRing(sx, sy, hs - lg, hs - lg * 2.6), H * 0.3, H * 0.33, cl);
+        part("chair", sq(sx, sy, hs), H * 0.74, H * 0.8, cl);
       }
-      (add("leg", r * 0.22, 0, H * 0.34, sold ? "#AEB6C2" : dk(col, 0.55), 12),
-        add("skirt", r * 0.72, H * 0.3, H * 0.86, sold ? "#B9C1CC" : dk(col, 0.78)),
-        add("top", r, H * 0.86, H, sold ? Ge : col),
-        sold || so(c[0], c[1], r, H, out, p, sold));
+      // Маса: ниска основа, тънка колона и плътният цветен плот.
+      part("base", Un(c[0], c[1], r * 0.5, 20), 0, H * 0.05, sold ? GREY_DARK : METAL_DARK);
+      part("column", Un(c[0], c[1], r * 0.09, 10), H * 0.05, H * 0.86, sold ? GREY_DARK : METAL_DARK);
+      part("top", Un(c[0], c[1], r, 28), H * 0.86, H, sold ? Ge : col);
     });
     // Радиусът на хит-зоната: колкото масата, но не по-малко от половин стъпка.
     tp = isFinite(foot) && foot > 0 ? Math.max(foot, isFinite(pitch) ? pitch * 0.42 : foot) : O * 1.1;
     return { type: "FeatureCollection", features: out };
-  }
-  // Аранжировката в средата на масата. Едно тънко стъбло с плоска шапка отгоре
-  // изглеждаше като болт, забит в плота: сега вазата е ниска и широка, а над
-  // нея има китка от няколко зелени и няколко цветни връхчета на различна
-  // височина.
-  // Букет в стъклена ваза: ваза с профил, ветрило от листа и четири цвята на
-  // различна височина. Всяко венчелистче е отделна завъртяна елипса - едно
-  // цилиндърче с шапка отгоре изглеждаше като болт, забит в плота.
-  // Схемата рисува само изправени тела с плосък връх, затова тук няма обли
-  // форми: купол от наслагани дискове излиза на стъпала.
-  const TAU2 = Math.PI * 2;
-  // Завъртяна елипса - венчелистче или листо.
-  function el2(cx, cy, rx, ry, rot, n) {
-    const out = [],
-      co = Math.cos(rot),
-      si = Math.sin(rot);
-    for (let k = 0; k < n; k++) {
-      const a = (k / n) * TAU2,
-        ux = Math.cos(a) * rx,
-        uy = Math.sin(a) * ry;
-      out.push([cx + ux * co - uy * si, cy + ux * si + uy * co]);
-    }
-    return (out.push(out[0]), [out]);
-  }
-  function so(cx, cy, r, H, out, p, sold) {
-    const R = r * 0.32,
-      GL = ["#e4ebf2", "#d7e0ea", "#cbd6e2"],
-      SG = ["#87a479", "#7a9a6c"],
-      LF = "#5f8455",
-      PET = [
-        ["#eaa9bd", "#e096ae", "#d4859f"],
-        ["#d98aa6", "#cf7a99", "#c26b8b"],
-      ],
-      CORE = "#f7ead8",
-      put = function (part, poly, base, top, color) {
-        out.push({
-          type: "Feature",
-          properties: { part: part, sold: sold, mk: p.mk, name: p.name, base: base, height: top, color: color },
-          geometry: { type: "Polygon", coordinates: poly },
-        });
-      };
-    // Вазата: пет пласта с мек профил - стеснява се и пак се разтваря нагоре.
-    for (let q = 0; q < 5; q++) {
-      const t0 = q / 5,
-        rad = R * (0.46 - 0.16 * Math.sin(t0 * Math.PI * 0.9) + 0.12 * t0);
-      put("vase", Un(cx, cy, rad, 22), H + H * 0.3 * t0, H + H * 0.3 * ((q + 1) / 5) + H * 0.03, GL[q % 3]);
-    }
-    // Листата излизат ветрилообразно над устието.
-    for (let q = 0; q < 5; q++) {
-      const a = (q / 5) * TAU2 + 0.3;
-      put(
-        "leaf",
-        el2(cx + Math.cos(a) * R * 0.5, cy + Math.sin(a) * R * 0.5, R * 0.5, R * 0.2, a, 18),
-        H * 1.26,
-        H * (1.34 + (q % 2) * 0.03),
-        q % 2 ? SG[0] : LF,
-      );
-    }
-    // Четири цвята: стъбло, венчелистчета в кръг и сърцевина отгоре.
-    for (let q = 0; q < 4; q++) {
-      const a = (q / 4) * TAU2 + 0.9,
-        bx = cx + Math.cos(a) * R * 0.34,
-        by = cy + Math.sin(a) * R * 0.34,
-        hb = H * (1.34 + (q % 2) * 0.07),
-        br = R * 0.3,
-        pet = PET[q % 2];
-      put("stem", Un(bx, by, R * 0.055, 10), H * 1.2, hb, SG[1]);
-      for (let w = 0; w < 6; w++) {
-        const pa = (w / 6) * TAU2 + a;
-        put(
-          "petal",
-          el2(bx + Math.cos(pa) * br * 0.6, by + Math.sin(pa) * br * 0.6, br * 0.54, br * 0.31, pa, 16),
-          hb,
-          hb + H * 0.13 * (0.62 + 0.1 * Math.sin(w * 2.4)),
-          pet[w % 3],
-        );
-      }
-      for (let w = 0; w < 3; w++) {
-        const t0 = w / 3;
-        put(
-          "core",
-          Un(bx, by, br * 0.36 * Math.sqrt(Math.max(0.02, 1 - t0 * t0)), 14),
-          hb + H * 0.13 * (0.45 + 0.7 * t0),
-          hb + H * 0.13 * (0.45 + 0.7 * ((w + 1) / 3)) + H * 0.01,
-          CORE,
-        );
-      }
-    }
   }
   // Сцената като 3D тяло: подиум с височина два пъти колкото масите, плюс
   // тънък по-светъл ръб отгоре, за да се чете като дъска, а не като блок.
@@ -957,6 +878,9 @@ window.SeatMap = (function () {
       ["price-pill", "#46587A", 3],
       ["price-pill-top", "#f0902f", 3],
       ["price-pill-cheap", "#28b661", 3],
+      // Правостоящите са свой продукт, не ценова категория: синият цвят на
+      // марката ги отделя и от зелено-оранжевите места, и от масите.
+      ["price-pill-standing", Ae, 3],
     ];
     (((l.tiers && l.tiers.length ? l.tiers : []).forEach(function (tr) {
       tr && tr.color != null && tr.tier != null && pi.push(["price-pill-t" + tr.tier, tr.color, 3]);
@@ -1066,7 +990,8 @@ window.SeatMap = (function () {
     (i.getLayer("pins-bubbles") && i.setLayoutProperty("pins-bubbles", "text-field", Re()),
       i.getLayer("section-number-labels") && i.setLayoutProperty("section-number-labels", "text-field", nl2()),
       i.getLayer("table-price-labels") && i.setLayoutProperty("table-price-labels", "text-field", tl2()),
-      i.getLayer("tables-overview") && i.setLayoutProperty("tables-overview", "text-field", mv2()));
+      i.getLayer("tables-overview") && i.setLayoutProperty("tables-overview", "text-field", mv2()),
+      i.getLayer("standing-label") && i.setLayoutProperty("standing-label", "text-field", stl()));
   }
   function pt(e) {
     const t = [];
@@ -1294,6 +1219,154 @@ window.SeatMap = (function () {
       { "font-scale": 1 },
     ];
   }
+  // Балонът на зоната за правостоящи: името дребно отгоре, цената едра отдолу -
+  // същият вид като „Маси, 6 места / от 900 €".
+  function stl() {
+    const c = _ ? ["get", "eurAll"] : ["get", "eur"];
+    return [
+      "format",
+      "Правостоящи",
+      { "font-scale": 0.78, "text-color": "#153D8A" },
+      "\n",
+      {},
+      ["concat", ["to-string", ["round", ["coalesce", c, 0]]], " €"],
+      { "font-scale": 1 },
+    ];
+  }
+  // Една точка в средата на зоната, където стои балонът.
+  function stPin() {
+    const f = ((l.standing && l.standing.features) || [])[0];
+    if (!f) return { type: "FeatureCollection", features: [] };
+    const xs = [],
+      ys = [];
+    f.geometry.coordinates[0].forEach(function (pt) {
+      xs.push(pt[0]);
+      ys.push(pt[1]);
+    });
+    return {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: [(Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2, (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2],
+          },
+          properties: { eur: f.properties.eur, eurAll: f.properties.eurAll },
+        },
+      ],
+    };
+  }
+  // Леко щриховане върху зоната: показва, че е площ за стоене, не място, и се
+  // отличава от плоските цветове на ценовите категории, без да е шумно.
+  function stHatch() {
+    if (!i || i.hasImage("standing-hatch")) return;
+    const sz = 14,
+      cv = document.createElement("canvas");
+    ((cv.width = sz), (cv.height = sz));
+    const cx = cv.getContext("2d");
+    ((cx.strokeStyle = "rgba(21,61,138,0.30)"), (cx.lineWidth = 1.4), cx.beginPath());
+    // Три отсечки, за да се слеят плочките без шев по ъглите.
+    [-sz, 0, sz].forEach(function (o) {
+      (cx.moveTo(o, sz), cx.lineTo(o + sz, 0));
+    });
+    cx.stroke();
+    i.addImage("standing-hatch", { width: sz, height: sz, data: cx.getImageData(0, 0, sz, sz).data }, { pixelRatio: 2 });
+  }
+  // Състояние на зоната: избрана и под мишката.
+  let stSelected = !1,
+    stHovered = null;
+  function stSet(on) {
+    ((stSelected = !!on),
+      i && i.getSource("standing") && i.setFeatureState({ source: "standing", id: "z:Standing" }, { selected: stSelected }));
+  }
+  function stHover(pt) {
+    if (!i || !i.getLayer("standing-fill")) return !1;
+    const f = i.queryRenderedFeatures(pt, { layers: ["standing-fill"] }),
+      mk = f && f.length ? f[0].properties.mk : null;
+    if (mk !== stHovered) {
+      (stHovered && i.setFeatureState({ source: "standing", id: stHovered }, { hover: !1 }),
+        mk && i.setFeatureState({ source: "standing", id: mk }, { hover: !0 }),
+        (stHovered = mk));
+    }
+    return !!mk;
+  }
+  // Камерата отива при зоната (от легендата). Наклонът се изправя, за да се
+  // види цялото поле, а не само ръбът му.
+  function stFrame() {
+    const f = l.standing && l.standing.features && l.standing.features[0];
+    if (!i || !f) return;
+    const xs = f.geometry.coordinates[0].map(function (pt) { return pt[0]; }),
+      ys = f.geometry.coordinates[0].map(function (pt) { return pt[1]; });
+    i.fitBounds(
+      [
+        [Math.min.apply(null, xs), Math.min.apply(null, ys)],
+        [Math.max.apply(null, xs), Math.max.apply(null, ys)],
+      ],
+      { padding: { top: 70, bottom: A ? 170 : 110, left: 30, right: 30 + panelPad() }, pitch: 0, bearing: 0, duration: rmo() ? 0 : 900, essential: !0 },
+    );
+  }
+  function stLayers() {
+    if (!l.standing || !l.standing.features || !l.standing.features.length) return;
+    const sel = ["boolean", ["feature-state", "selected"], !1],
+      hov = ["boolean", ["feature-state", "hover"], !1],
+      off = ["any", ["==", ["get", "sold"], !0], ["==", ["get", "offsale"], !0]];
+    (i.addSource("standing", { type: "geojson", data: l.standing, promoteId: "mk" }),
+      i.addSource("standingPin", { type: "geojson", data: stPin() }),
+      stHatch(),
+      dt());
+    // Под всичко останало: зоната е плосък под между масите и FOH. Слоят е
+    // fill, а не fill-extrusion - само той се хваща от queryRenderedFeatures.
+    i.addLayer({
+      id: "standing-fill",
+      type: "fill",
+      source: "standing",
+      paint: {
+        "fill-color": ["case", off, "#E3E7EE", sel, "#A9C4EC", hov, "#C9DBF4", "#DCE8F8"],
+        "fill-color-transition": { duration: Ux2(160), delay: 0 },
+        "fill-opacity": 1,
+      },
+    });
+    i.addLayer({
+      id: "standing-hatch",
+      type: "fill",
+      source: "standing",
+      paint: { "fill-pattern": "standing-hatch", "fill-opacity": ["case", off, 0, sel, 0.9, 0.7] },
+    });
+    i.addLayer({
+      id: "standing-line",
+      type: "line",
+      source: "standing",
+      paint: { "line-color": ["case", off, "#AEB6C2", Ae], "line-width": 1.6, "line-dasharray": [3, 2] },
+    });
+    // Избрана: плътен по-дебел кант върху пунктира.
+    i.addLayer({
+      id: "standing-line-sel",
+      type: "line",
+      source: "standing",
+      paint: { "line-color": Ae, "line-width": 3, "line-opacity": ["case", sel, 1, 0] },
+    });
+    i.addLayer({
+      id: "standing-label",
+      type: "symbol",
+      source: "standingPin",
+      layout: {
+        "icon-image": "price-pill-standing",
+        "icon-text-fit": "both",
+        "icon-text-fit-padding": [2, 5, 2, 5],
+        "text-field": stl(),
+        "text-font": K,
+        "text-size": ["interpolate", ["linear"], ["zoom"], C(Qe) - 2.2, 10, C(Qe) + 0.6, 12],
+        "text-anchor": "center",
+        "text-justify": "center",
+        "text-line-height": 1.15,
+        "icon-allow-overlap": !0,
+        "text-allow-overlap": !0,
+      },
+      paint: { "text-color": "#0B1B3A" },
+    });
+    stSelected && stSet(!0);
+  }
   function nl2() {
     const ot = _ ? ["get", "priceFromAll"] : ["get", "priceFrom"],
       dk = _ ? ["get", "priceToAll"] : ["get", "priceTo"],
@@ -1401,6 +1474,7 @@ window.SeatMap = (function () {
         paint: { "line-color": r, "line-width": s },
       });
     }
+    stLayers();
     if (
       (i.addLayer({
         id: "sections-fill",
@@ -1612,19 +1686,9 @@ window.SeatMap = (function () {
             "fill-extrusion-color": [
               "case",
               ["boolean", ["feature-state", "selected"], !1],
-              [
-                "match",
-                ["get", "part"],
-                "vase",
-                "#e7eef5",
-                ["leaf", "stem"],
-                "#9ccc8a",
-                "petal",
-                "#ff9ec4",
-                "core",
-                "#ffe9cf",
-                Ae,
-              ],
+              // Избраната маса: плотът става син, металът остава черен - личи
+              // отгоре, без да се губи видът на масата.
+              ["match", ["get", "part"], "top", Ae, ["coalesce", ["get", "color"], "#c9a227"]],
               ["coalesce", ["get", "color"], "#c9a227"],
             ],
             // Същият прелив и при масите: „Друга маса" сменя две наведнъж.
@@ -1819,7 +1883,7 @@ window.SeatMap = (function () {
     // Надписите и ценовите балони излизат най-отгоре. Слоевете, добавени след
     // тях (маси, рампи, сенки на местата), се рисуваха ВЪРХУ балона - местата
     // прозираха през него и точно затова изглеждаше слят със схемата.
-    ["row-labels", "section-number-labels", "object-labels", "pins-bubbles"].forEach(function (nm) {
+    ["row-labels", "section-number-labels", "object-labels", "pins-bubbles", "standing-label"].forEach(function (nm) {
       i.getLayer(nm) && i.moveLayer(nm);
     });
   }
@@ -1934,16 +1998,17 @@ window.SeatMap = (function () {
           ((Qt2 = n), Kq2 || (Kq2 = requestAnimationFrame(Xq2)));
         }),
         i.on("mouseout", function () {
-          (e(), (i.getCanvas().style.cursor = ""));
+          (e(), stHover([-1e5, -1e5]), (i.getCanvas().style.cursor = ""));
         })),
       (Xq2 = function () {
         Kq2 = 0;
         const n = Qt2;
         if (!n) return;
         {
-          const o = Rl(n.point);
+          const o = Rl(n.point),
+            sh = stHover(n.point);
           if (!o) {
-            (F != null && e(), (i.getCanvas().style.cursor = ""));
+            (F != null && e(), (i.getCanvas().style.cursor = sh ? "pointer" : ""));
             return;
           }
           if (((i.getCanvas().style.cursor = "pointer"), !Ne())) {
@@ -1999,6 +2064,14 @@ window.SeatMap = (function () {
                 return;
               }
             } else (qn2(), Ft2());
+            return;
+          }
+        }
+        // Зоната за правостоящи е голямо плоско поле: хваща се на всякакъв мащаб.
+        if (!hs && i.getLayer("standing-fill")) {
+          const sf = i.queryRenderedFeatures(n.point, { layers: ["standing-fill"] });
+          if (sf && sf.length) {
+            Sn2(sf[0].properties.mk);
             return;
           }
         }
@@ -2206,6 +2279,7 @@ window.SeatMap = (function () {
       (ze = typeof e.onSeatClick == "function" ? e.onSeatClick : function () {}),
       (Jn = typeof e.onTableClick == "function" ? e.onTableClick : function () {}),
       (qn2 = typeof e.onTablesZone == "function" ? e.onTablesZone : function () {}),
+      (Sn2 = typeof e.onStandingClick == "function" ? e.onStandingClick : function () {}),
       (he = typeof e.onBackgroundClick == "function" ? e.onBackgroundClick : function () {}),
       (H = new Map()));
     const n = (l.sections && l.sections.features) || [];
@@ -2966,6 +3040,8 @@ window.SeatMap = (function () {
         });
     },
     selectTables: Ot2,
+    selectStanding: stSet,
+    frameStanding: stFrame,
     clearTableSelection: function () {
       Ot2([]);
     },
