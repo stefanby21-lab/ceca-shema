@@ -29,7 +29,7 @@ stamp() {
   fi
 }
 
-for f in startup.js ceca-plan-svg.js map-svg.js styles.css venue-data-ceca.js arena-geometry.js arena-seatview.js map.js seatview3d.js seatfinder.js party-memory.js ui.js app.js sheet.js; do
+for f in startup.js ceca-plan-svg.js map-svg.js styles.css venue-data-ceca.js arena-geometry.js arena-seatview.js map.js seatview3d.js seatfinder.js party-memory.js seatviews.js seatview-image.js ui.js app.js sheet.js; do
   stamp index.html "$f"
 done
 for f in assets/preview-map-desktop.webp assets/preview-map-mobile.webp assets/preview-plan-desktop.webp assets/preview-plan-mobile.webp; do

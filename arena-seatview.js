@@ -70,10 +70,108 @@ window.ArenaSeatView = (function () {
       target.addEventListener(event, fn, opts);
       listeners.push(() => target.removeEventListener(event, fn, opts));
     }
+    // ---- Готова картинка на гледната точка (assets/seatviews, seatviews.js) ----
+    // Докато се строи сцената (и когато смяната на място е бавна), над платното стои
+    // най-близката готова картинка. Не хваща докосвания, маха се след първия истински
+    // кадър (200 мс, без движение при „намалено движение") и при всеки изход, и при грешка.
+    // #render (tools/render-seatviews.cjs) я изключва, за да снима само сцената.
+    const SLOW_SWITCH_MS = 300;
+    const posterOn = location.hash !== "#render" && !!window.SeatViews;
+    let poster = null,
+      posterToken = 0,
+      posterTimer = 0,
+      posterWanted = false,
+      holdPoster = false,
+      measureFrom = null,
+      lastCost = 0;
+    // Връща обещание, което се изпълнява (и при грешка), когато картинката е декодирана и е имало два
+    // кадъра за рисуване с нея: чак тогава е безопасно да се почне тежката работа, която блокира нишката.
+    function showPoster(mk) {
+      if (!posterOn || disposed) return Promise.resolve();
+      posterWanted = true;
+      const token = ++posterToken;
+      return window.SeatViews.load()
+        .then((manifest) => {
+          if (token !== posterToken || disposed) return;
+          const view = window.SeatViews.nearest(options.venue, mk, manifest);
+          if (!view) return;
+          const src = new URL(window.SeatViews.url(view), document.baseURI).href;
+          if (poster && poster.src === src) return;
+          poster?.remove();
+          const img = el("img", "arena-view__poster");
+          img.alt = "";
+          img.decoding = "async";
+          img.draggable = false;
+          img.setAttribute("aria-hidden", "true");
+          img.addEventListener("error", () => {
+            img.remove();
+            if (poster === img) poster = null;
+          });
+          img.src = src;
+          stage.append(img);
+          poster = img;
+          return img
+            .decode()
+            .catch(() => {})
+            .then(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+        })
+        .catch(() => {});
+    }
+    const wait = (ms) => new Promise((done) => setTimeout(done, ms));
+    function hidePoster() {
+      posterWanted = false;
+      posterToken++;
+      clearTimeout(posterTimer);
+      const gone = poster;
+      poster = null;
+      if (!gone) return;
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        gone.remove();
+        return;
+      }
+      gone.classList.add("is-leaving");
+      gone.addEventListener("transitionend", () => gone.remove());
+      setTimeout(() => gone.remove(), 400);
+    }
+    // Вика се след всеки нарисуван кадър: мери колко е струвала последната смяна на
+    // гледната точка и, ако стои картинка, я сваля, когато кадърът е предаден на екрана.
+    function afterFrame() {
+      if (measureFrom !== null) {
+        const started = measureFrom;
+        measureFrom = null;
+        requestAnimationFrame(() => {
+          lastCost = performance.now() - started;
+        });
+      }
+      clearTimeout(posterTimer);
+      if (posterWanted && !holdPoster) requestAnimationFrame(hidePoster);
+    }
+    // Смяна на гледната точка. Ако предишната смяна е била бавна, картинката се показва
+    // ПРЕДИ тежката работа (тя блокира нишката и после нищо не може да се нарисува);
+    // иначе картинката идва само ако кадърът не е готов за 300 мс.
+    function switchTo(apply, mk) {
+      clearTimeout(posterTimer);
+      const run = () => {
+        measureFrom = performance.now();
+        apply();
+      };
+      if (posterOn && lastCost > SLOW_SWITCH_MS) {
+        holdPoster = true;
+        Promise.race([showPoster(mk), wait(250)]).then(() => {
+          holdPoster = false;
+          if (!disposed) run();
+        });
+      } else {
+        run();
+        if (posterOn) posterTimer = setTimeout(() => showPoster(mk), SLOW_SWITCH_MS);
+      }
+    }
     const session = {
       dispose() {
         if (disposed) return;
         disposed = true;
+        posterToken++;
+        clearTimeout(posterTimer);
         cancelAnimationFrame(raf);
         listeners.forEach((f) => f());
         observer?.disconnect();
@@ -110,6 +208,7 @@ window.ArenaSeatView = (function () {
         }
       }
     });
+    const posterReady = showPoster(options.mk);
     try {
       threePromise ||= import(
         new URL("vendor/three.module.js?v=0.160.0", document.baseURI).href
@@ -118,6 +217,8 @@ window.ArenaSeatView = (function () {
         throw e;
       });
       const T = await threePromise;
+      // Сцената се строи в една дълга задача: картинката трябва да е вече нарисувана (най-много 1.2 с изчакване).
+      await Promise.race([posterReady, wait(1200)]);
       if (disposed) return;
       const G = window.ArenaGeometry,
         v = G.forView(options.venue),
@@ -984,8 +1085,9 @@ window.ArenaSeatView = (function () {
         const име=currentTable?currentTable.properties.name+' · стол '+(chairPosition+1):viewpoint.selectedOptions[0].textContent;
         overlay.setAttribute('aria-label',име);schedule();
       }
-      on(viewpoint,'change',()=>{currentTable=tables.find(t=>t.properties.mk===viewpoint.value)||null;currentSeat=v.seats.features.find(s=>s.properties.mk===viewpoint.value)||(standingOwn&&viewpoint.value===standingOwn.properties.mk?standingOwn:own);chairPosition=0;positionView();});
-      on(tableChair,'click',()=>{chairPosition=(chairPosition+1)%STOOLS.length;positionView();});
+      function applyViewpoint(mk){currentTable=tables.find(t=>t.properties.mk===mk)||null;currentSeat=v.seats.features.find(s=>s.properties.mk===mk)||(standingOwn&&mk===standingOwn.properties.mk?standingOwn:own);chairPosition=0;positionView();}
+      on(viewpoint,'change',()=>{const mk=viewpoint.value;switchTo(()=>applyViewpoint(mk),mk);});
+      on(tableChair,'click',()=>switchTo(()=>{chairPosition=(chairPosition+1)%STOOLS.length;positionView();},currentTable.properties.mk));
       let yaw = homeYaw,
         pitch = homePitch,
         fov = 70;
@@ -1000,6 +1102,7 @@ window.ArenaSeatView = (function () {
           camera.position.z - Math.cos(yaw) * Math.cos(pitch),
         );
         renderer.render(scene, camera);
+        afterFrame();
       }
       function schedule() {
         if (!raf && !disposed) raf = requestAnimationFrame(draw);
@@ -1120,9 +1223,10 @@ window.ArenaSeatView = (function () {
           ),
         );
       });
-      if (location.hash === "#dev")
-        window.arenaViewDebug = { camera, scene, own, renderer };
+      if (location.hash === "#dev" || location.hash === "#render")
+        window.arenaViewDebug = { camera, scene, own, renderer, goTo: (mk) => switchTo(() => applyViewpoint(mk), mk) };
     } catch (error) {
+      hidePoster();
       if (!disposed)
         status.textContent =
           "Изгледът не можа да се зареди. Затворете и опитайте отново.";

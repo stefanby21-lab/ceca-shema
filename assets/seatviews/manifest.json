@@ -1,0 +1,1813 @@
+{
+ "version": 1,
+ "width": 1200,
+ "height": 675,
+ "quality": 60,
+ "views": [
+  {
+   "id": "s-A.1.2-r9",
+   "kind": "tribune",
+   "sector": "A.1.2",
+   "row": "9",
+   "mk": "s:A.1.2 r:9 t:11",
+   "rows": [
+    4,
+    12
+   ],
+   "file": "s-A.1.2-r9.90302e04.webp",
+   "bytes": 64986
+  },
+  {
+   "id": "s-A.1.3-r9",
+   "kind": "tribune",
+   "sector": "A.1.3",
+   "row": "9",
+   "mk": "s:A.1.3 r:9 t:11",
+   "rows": [
+    4,
+    12
+   ],
+   "file": "s-A.1.3-r9.9e90a18c.webp",
+   "bytes": 70224
+  },
+  {
+   "id": "s-A.1.4-r9",
+   "kind": "tribune",
+   "sector": "A.1.4",
+   "row": "9",
+   "mk": "s:A.1.4 r:9 t:11",
+   "rows": [
+    4,
+    12
+   ],
+   "file": "s-A.1.4-r9.f136738d.webp",
+   "bytes": 76074
+  },
+  {
+   "id": "s-A.1.5-r8",
+   "kind": "tribune",
+   "sector": "A.1.5",
+   "row": "8",
+   "mk": "s:A.1.5 r:8 t:11",
+   "rows": [
+    4,
+    12
+   ],
+   "file": "s-A.1.5-r8.0351d609.webp",
+   "bytes": 69408
+  },
+  {
+   "id": "s-A.1.6-r8",
+   "kind": "tribune",
+   "sector": "A.1.6",
+   "row": "8",
+   "mk": "s:A.1.6 r:8 t:4",
+   "rows": [
+    4,
+    12
+   ],
+   "file": "s-A.1.6-r8.685962c2.webp",
+   "bytes": 61760
+  },
+  {
+   "id": "s-A.2.2-r15",
+   "kind": "tribune",
+   "sector": "A.2.2",
+   "row": "15",
+   "mk": "s:A.2.2 r:15 t:11",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-A.2.2-r15.d461502e.webp",
+   "bytes": 74336
+  },
+  {
+   "id": "s-A.2.2-r20",
+   "kind": "tribune",
+   "sector": "A.2.2",
+   "row": "20",
+   "mk": "s:A.2.2 r:20 t:12",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-A.2.2-r20.5e6b0666.webp",
+   "bytes": 74700
+  },
+  {
+   "id": "s-A.2.2-r25",
+   "kind": "tribune",
+   "sector": "A.2.2",
+   "row": "25",
+   "mk": "s:A.2.2 r:25 t:6",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-A.2.2-r25.a200b14f.webp",
+   "bytes": 76014
+  },
+  {
+   "id": "s-A.2.3-r17",
+   "kind": "tribune",
+   "sector": "A.2.3",
+   "row": "17",
+   "mk": "s:A.2.3 r:17 t:7",
+   "rows": [
+    13,
+    21
+   ],
+   "file": "s-A.2.3-r17.ba48a990.webp",
+   "bytes": 74172
+  },
+  {
+   "id": "s-A.2.4-r17",
+   "kind": "tribune",
+   "sector": "A.2.4",
+   "row": "17",
+   "mk": "s:A.2.4 r:17 t:7",
+   "rows": [
+    13,
+    21
+   ],
+   "file": "s-A.2.4-r17.fedecdfb.webp",
+   "bytes": 79196
+  },
+  {
+   "id": "s-A.2.5-r15",
+   "kind": "tribune",
+   "sector": "A.2.5",
+   "row": "15",
+   "mk": "s:A.2.5 r:15 t:7",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-A.2.5-r15.9e09c298.webp",
+   "bytes": 76556
+  },
+  {
+   "id": "s-A.2.5-r20",
+   "kind": "tribune",
+   "sector": "A.2.5",
+   "row": "20",
+   "mk": "s:A.2.5 r:20 t:9",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-A.2.5-r20.0f008581.webp",
+   "bytes": 74364
+  },
+  {
+   "id": "s-A.2.5-r25",
+   "kind": "tribune",
+   "sector": "A.2.5",
+   "row": "25",
+   "mk": "s:A.2.5 r:25 t:13",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-A.2.5-r25.ced1ab4d.webp",
+   "bytes": 75290
+  },
+  {
+   "id": "s-A.2.6-r15",
+   "kind": "tribune",
+   "sector": "A.2.6",
+   "row": "15",
+   "mk": "s:A.2.6 r:15 t:6",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-A.2.6-r15.d4f65a46.webp",
+   "bytes": 63770
+  },
+  {
+   "id": "s-A.2.6-r20",
+   "kind": "tribune",
+   "sector": "A.2.6",
+   "row": "20",
+   "mk": "s:A.2.6 r:20 t:6",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-A.2.6-r20.33adcd76.webp",
+   "bytes": 69970
+  },
+  {
+   "id": "s-A.2.6-r25",
+   "kind": "tribune",
+   "sector": "A.2.6",
+   "row": "25",
+   "mk": "s:A.2.6 r:25 t:8",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-A.2.6-r25.ea7c0d5f.webp",
+   "bytes": 69366
+  },
+  {
+   "id": "s-A.3.2-r3",
+   "kind": "tribune",
+   "sector": "A.3.2",
+   "row": "3",
+   "mk": "s:A.3.2 r:3 t:12",
+   "rows": [
+    1,
+    6
+   ],
+   "file": "s-A.3.2-r3.85da2e60.webp",
+   "bytes": 71290
+  },
+  {
+   "id": "s-A.3.2-r9",
+   "kind": "tribune",
+   "sector": "A.3.2",
+   "row": "9",
+   "mk": "s:A.3.2 r:9 t:12",
+   "rows": [
+    7,
+    11
+   ],
+   "file": "s-A.3.2-r9.0bfa58ed.webp",
+   "bytes": 66510
+  },
+  {
+   "id": "s-A.3.2-r14",
+   "kind": "tribune",
+   "sector": "A.3.2",
+   "row": "14",
+   "mk": "s:A.3.2 r:14 t:12",
+   "rows": [
+    12,
+    16
+   ],
+   "file": "s-A.3.2-r14.62722f19.webp",
+   "bytes": 65242
+  },
+  {
+   "id": "s-A.3.3-r3",
+   "kind": "tribune",
+   "sector": "A.3.3",
+   "row": "3",
+   "mk": "s:A.3.3 r:3 t:12",
+   "rows": [
+    1,
+    6
+   ],
+   "file": "s-A.3.3-r3.29f52580.webp",
+   "bytes": 76784
+  },
+  {
+   "id": "s-A.3.3-r9",
+   "kind": "tribune",
+   "sector": "A.3.3",
+   "row": "9",
+   "mk": "s:A.3.3 r:9 t:12",
+   "rows": [
+    7,
+    11
+   ],
+   "file": "s-A.3.3-r9.42358121.webp",
+   "bytes": 71992
+  },
+  {
+   "id": "s-A.3.3-r14",
+   "kind": "tribune",
+   "sector": "A.3.3",
+   "row": "14",
+   "mk": "s:A.3.3 r:14 t:12",
+   "rows": [
+    12,
+    16
+   ],
+   "file": "s-A.3.3-r14.bd167727.webp",
+   "bytes": 70186
+  },
+  {
+   "id": "s-A.3.4-r4",
+   "kind": "tribune",
+   "sector": "A.3.4",
+   "row": "4",
+   "mk": "s:A.3.4 r:4 t:12",
+   "rows": [
+    2,
+    6
+   ],
+   "file": "s-A.3.4-r4.1fbc32c4.webp",
+   "bytes": 76646
+  },
+  {
+   "id": "s-A.3.4-r9",
+   "kind": "tribune",
+   "sector": "A.3.4",
+   "row": "9",
+   "mk": "s:A.3.4 r:9 t:12",
+   "rows": [
+    7,
+    11
+   ],
+   "file": "s-A.3.4-r9.a40d114e.webp",
+   "bytes": 74138
+  },
+  {
+   "id": "s-A.3.4-r14",
+   "kind": "tribune",
+   "sector": "A.3.4",
+   "row": "14",
+   "mk": "s:A.3.4 r:14 t:12",
+   "rows": [
+    12,
+    16
+   ],
+   "file": "s-A.3.4-r14.e529fff2.webp",
+   "bytes": 73448
+  },
+  {
+   "id": "s-A.3.5-r4",
+   "kind": "tribune",
+   "sector": "A.3.5",
+   "row": "4",
+   "mk": "s:A.3.5 r:4 t:12",
+   "rows": [
+    2,
+    6
+   ],
+   "file": "s-A.3.5-r4.c17d59b3.webp",
+   "bytes": 77958
+  },
+  {
+   "id": "s-A.3.5-r9",
+   "kind": "tribune",
+   "sector": "A.3.5",
+   "row": "9",
+   "mk": "s:A.3.5 r:9 t:12",
+   "rows": [
+    7,
+    11
+   ],
+   "file": "s-A.3.5-r9.eb3d66db.webp",
+   "bytes": 75290
+  },
+  {
+   "id": "s-A.3.5-r14",
+   "kind": "tribune",
+   "sector": "A.3.5",
+   "row": "14",
+   "mk": "s:A.3.5 r:14 t:12",
+   "rows": [
+    12,
+    16
+   ],
+   "file": "s-A.3.5-r14.5461ccba.webp",
+   "bytes": 74644
+  },
+  {
+   "id": "s-A.3.6-r4",
+   "kind": "tribune",
+   "sector": "A.3.6",
+   "row": "4",
+   "mk": "s:A.3.6 r:4 t:7",
+   "rows": [
+    2,
+    6
+   ],
+   "file": "s-A.3.6-r4.34177dba.webp",
+   "bytes": 69830
+  },
+  {
+   "id": "s-A.3.6-r9",
+   "kind": "tribune",
+   "sector": "A.3.6",
+   "row": "9",
+   "mk": "s:A.3.6 r:9 t:5",
+   "rows": [
+    7,
+    11
+   ],
+   "file": "s-A.3.6-r9.93b5ad0d.webp",
+   "bytes": 70218
+  },
+  {
+   "id": "s-A.3.6-r14",
+   "kind": "tribune",
+   "sector": "A.3.6",
+   "row": "14",
+   "mk": "s:A.3.6 r:14 t:5",
+   "rows": [
+    12,
+    16
+   ],
+   "file": "s-A.3.6-r14.2171e87a.webp",
+   "bytes": 71578
+  },
+  {
+   "id": "s-B.1.1-r9",
+   "kind": "tribune",
+   "sector": "B.1.1",
+   "row": "9",
+   "mk": "s:B.1.1 r:9 t:13",
+   "rows": [
+    5,
+    12
+   ],
+   "file": "s-B.1.1-r9.8e379099.webp",
+   "bytes": 77886
+  },
+  {
+   "id": "s-B.1.2-r9",
+   "kind": "tribune",
+   "sector": "B.1.2",
+   "row": "9",
+   "mk": "s:B.1.2 r:9 t:11",
+   "rows": [
+    5,
+    12
+   ],
+   "file": "s-B.1.2-r9.12783a73.webp",
+   "bytes": 71694
+  },
+  {
+   "id": "s-B.1.3-r9",
+   "kind": "tribune",
+   "sector": "B.1.3",
+   "row": "9",
+   "mk": "s:B.1.3 r:9 t:11",
+   "rows": [
+    5,
+    12
+   ],
+   "file": "s-B.1.3-r9.4d527fb8.webp",
+   "bytes": 71300
+  },
+  {
+   "id": "s-B.1.4-r9",
+   "kind": "tribune",
+   "sector": "B.1.4",
+   "row": "9",
+   "mk": "s:B.1.4 r:9 t:4",
+   "rows": [
+    5,
+    12
+   ],
+   "file": "s-B.1.4-r9.80561a9a.webp",
+   "bytes": 78194
+  },
+  {
+   "id": "s-B.2.1-r16",
+   "kind": "tribune",
+   "sector": "B.2.1",
+   "row": "16",
+   "mk": "s:B.2.1 r:16 t:10",
+   "rows": [
+    14,
+    18
+   ],
+   "file": "s-B.2.1-r16.4c7704d3.webp",
+   "bytes": 79666
+  },
+  {
+   "id": "s-B.2.1-r21",
+   "kind": "tribune",
+   "sector": "B.2.1",
+   "row": "21",
+   "mk": "s:B.2.1 r:21 t:10",
+   "rows": [
+    19,
+    23
+   ],
+   "file": "s-B.2.1-r21.973060c6.webp",
+   "bytes": 82910
+  },
+  {
+   "id": "s-B.2.1-r25",
+   "kind": "tribune",
+   "sector": "B.2.1",
+   "row": "25",
+   "mk": "s:B.2.1 r:25 t:9",
+   "rows": [
+    24,
+    27
+   ],
+   "file": "s-B.2.1-r25.85933fbf.webp",
+   "bytes": 84156
+  },
+  {
+   "id": "s-B.2.2-r15",
+   "kind": "tribune",
+   "sector": "B.2.2",
+   "row": "15",
+   "mk": "s:B.2.2 r:15 t:11",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-B.2.2-r15.7062eee7.webp",
+   "bytes": 76354
+  },
+  {
+   "id": "s-B.2.2-r20",
+   "kind": "tribune",
+   "sector": "B.2.2",
+   "row": "20",
+   "mk": "s:B.2.2 r:20 t:11",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-B.2.2-r20.9bfe2ec5.webp",
+   "bytes": 79468
+  },
+  {
+   "id": "s-B.2.2-r25",
+   "kind": "tribune",
+   "sector": "B.2.2",
+   "row": "25",
+   "mk": "s:B.2.2 r:25 t:11",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-B.2.2-r25.2831f3f9.webp",
+   "bytes": 79104
+  },
+  {
+   "id": "s-B.2.3-r15",
+   "kind": "tribune",
+   "sector": "B.2.3",
+   "row": "15",
+   "mk": "s:B.2.3 r:15 t:11",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-B.2.3-r15.91ac666e.webp",
+   "bytes": 75738
+  },
+  {
+   "id": "s-B.2.3-r20",
+   "kind": "tribune",
+   "sector": "B.2.3",
+   "row": "20",
+   "mk": "s:B.2.3 r:20 t:11",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-B.2.3-r20.99029d23.webp",
+   "bytes": 78322
+  },
+  {
+   "id": "s-B.2.3-r25",
+   "kind": "tribune",
+   "sector": "B.2.3",
+   "row": "25",
+   "mk": "s:B.2.3 r:25 t:11",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-B.2.3-r25.a8de9d48.webp",
+   "bytes": 77262
+  },
+  {
+   "id": "s-B.2.4-r16",
+   "kind": "tribune",
+   "sector": "B.2.4",
+   "row": "16",
+   "mk": "s:B.2.4 r:16 t:7",
+   "rows": [
+    14,
+    18
+   ],
+   "file": "s-B.2.4-r16.95afb095.webp",
+   "bytes": 75942
+  },
+  {
+   "id": "s-B.2.4-r21",
+   "kind": "tribune",
+   "sector": "B.2.4",
+   "row": "21",
+   "mk": "s:B.2.4 r:21 t:6",
+   "rows": [
+    19,
+    23
+   ],
+   "file": "s-B.2.4-r21.a9de2743.webp",
+   "bytes": 80108
+  },
+  {
+   "id": "s-B.2.4-r25",
+   "kind": "tribune",
+   "sector": "B.2.4",
+   "row": "25",
+   "mk": "s:B.2.4 r:25 t:8",
+   "rows": [
+    24,
+    27
+   ],
+   "file": "s-B.2.4-r25.41f782e1.webp",
+   "bytes": 81548
+  },
+  {
+   "id": "s-B.2.5-r15",
+   "kind": "tribune",
+   "sector": "B.2.5",
+   "row": "15",
+   "mk": "s:B.2.5 r:15 t:13",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-B.2.5-r15.cbd5b1a1.webp",
+   "bytes": 82654
+  },
+  {
+   "id": "s-B.2.5-r20",
+   "kind": "tribune",
+   "sector": "B.2.5",
+   "row": "20",
+   "mk": "s:B.2.5 r:20 t:14",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-B.2.5-r20.36a3d5ab.webp",
+   "bytes": 81944
+  },
+  {
+   "id": "s-B.2.5-r25",
+   "kind": "tribune",
+   "sector": "B.2.5",
+   "row": "25",
+   "mk": "s:B.2.5 r:25 t:13",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-B.2.5-r25.2ebb6b83.webp",
+   "bytes": 84564
+  },
+  {
+   "id": "s-B.2.6-r15",
+   "kind": "tribune",
+   "sector": "B.2.6",
+   "row": "15",
+   "mk": "s:B.2.6 r:15 t:11",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-B.2.6-r15.65a4828e.webp",
+   "bytes": 83288
+  },
+  {
+   "id": "s-B.2.6-r20",
+   "kind": "tribune",
+   "sector": "B.2.6",
+   "row": "20",
+   "mk": "s:B.2.6 r:20 t:9",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-B.2.6-r20.68fe3b4d.webp",
+   "bytes": 87350
+  },
+  {
+   "id": "s-B.2.6-r25",
+   "kind": "tribune",
+   "sector": "B.2.6",
+   "row": "25",
+   "mk": "s:B.2.6 r:25 t:11",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-B.2.6-r25.2d76e49c.webp",
+   "bytes": 89510
+  },
+  {
+   "id": "s-B.2.7-r15",
+   "kind": "tribune",
+   "sector": "B.2.7",
+   "row": "15",
+   "mk": "s:B.2.7 r:15 t:13",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-B.2.7-r15.b8fd368a.webp",
+   "bytes": 82626
+  },
+  {
+   "id": "s-B.2.7-r20",
+   "kind": "tribune",
+   "sector": "B.2.7",
+   "row": "20",
+   "mk": "s:B.2.7 r:20 t:14",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-B.2.7-r20.563d2265.webp",
+   "bytes": 86828
+  },
+  {
+   "id": "s-B.2.7-r25",
+   "kind": "tribune",
+   "sector": "B.2.7",
+   "row": "25",
+   "mk": "s:B.2.7 r:25 t:13",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-B.2.7-r25.10760c93.webp",
+   "bytes": 91494
+  },
+  {
+   "id": "s-B.2.8-r15",
+   "kind": "tribune",
+   "sector": "B.2.8",
+   "row": "15",
+   "mk": "s:B.2.8 r:15 t:11",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-B.2.8-r15.016feff6.webp",
+   "bytes": 83172
+  },
+  {
+   "id": "s-B.2.8-r20",
+   "kind": "tribune",
+   "sector": "B.2.8",
+   "row": "20",
+   "mk": "s:B.2.8 r:20 t:9",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-B.2.8-r20.907e00ec.webp",
+   "bytes": 83726
+  },
+  {
+   "id": "s-B.2.8-r25",
+   "kind": "tribune",
+   "sector": "B.2.8",
+   "row": "25",
+   "mk": "s:B.2.8 r:25 t:11",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-B.2.8-r25.ba5739db.webp",
+   "bytes": 86498
+  },
+  {
+   "id": "s-C.1.1-r8",
+   "kind": "tribune",
+   "sector": "C.1.1",
+   "row": "8",
+   "mk": "s:C.1.1 r:8 t:13",
+   "rows": [
+    4,
+    12
+   ],
+   "file": "s-C.1.1-r8.2ac772f1.webp",
+   "bytes": 65892
+  },
+  {
+   "id": "s-C.1.2-r8",
+   "kind": "tribune",
+   "sector": "C.1.2",
+   "row": "8",
+   "mk": "s:C.1.2 r:8 t:11",
+   "rows": [
+    4,
+    12
+   ],
+   "file": "s-C.1.2-r8.ed74b5d7.webp",
+   "bytes": 73576
+  },
+  {
+   "id": "s-C.1.3-r9",
+   "kind": "tribune",
+   "sector": "C.1.3",
+   "row": "9",
+   "mk": "s:C.1.3 r:9 t:11",
+   "rows": [
+    4,
+    12
+   ],
+   "file": "s-C.1.3-r9.5325dca2.webp",
+   "bytes": 80030
+  },
+  {
+   "id": "s-C.1.4-r9",
+   "kind": "tribune",
+   "sector": "C.1.4",
+   "row": "9",
+   "mk": "s:C.1.4 r:9 t:11",
+   "rows": [
+    4,
+    12
+   ],
+   "file": "s-C.1.4-r9.2a4ce8cd.webp",
+   "bytes": 75018
+  },
+  {
+   "id": "s-C.1.5-r9",
+   "kind": "tribune",
+   "sector": "C.1.5",
+   "row": "9",
+   "mk": "s:C.1.5 r:9 t:11",
+   "rows": [
+    4,
+    12
+   ],
+   "file": "s-C.1.5-r9.86642fdd.webp",
+   "bytes": 66364
+  },
+  {
+   "id": "s-C.2.1-r15",
+   "kind": "tribune",
+   "sector": "C.2.1",
+   "row": "15",
+   "mk": "s:C.2.1 r:15 t:10",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-C.2.1-r15.951ae2c9.webp",
+   "bytes": 65750
+  },
+  {
+   "id": "s-C.2.1-r20",
+   "kind": "tribune",
+   "sector": "C.2.1",
+   "row": "20",
+   "mk": "s:C.2.1 r:20 t:11",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-C.2.1-r20.ac645b03.webp",
+   "bytes": 72242
+  },
+  {
+   "id": "s-C.2.1-r25",
+   "kind": "tribune",
+   "sector": "C.2.1",
+   "row": "25",
+   "mk": "s:C.2.1 r:25 t:9",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-C.2.1-r25.ebbcd147.webp",
+   "bytes": 73922
+  },
+  {
+   "id": "s-C.2.2-r15",
+   "kind": "tribune",
+   "sector": "C.2.2",
+   "row": "15",
+   "mk": "s:C.2.2 r:15 t:11",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-C.2.2-r15.ebd50942.webp",
+   "bytes": 81398
+  },
+  {
+   "id": "s-C.2.2-r20",
+   "kind": "tribune",
+   "sector": "C.2.2",
+   "row": "20",
+   "mk": "s:C.2.2 r:20 t:11",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-C.2.2-r20.ff9dfd54.webp",
+   "bytes": 80854
+  },
+  {
+   "id": "s-C.2.2-r25",
+   "kind": "tribune",
+   "sector": "C.2.2",
+   "row": "25",
+   "mk": "s:C.2.2 r:25 t:11",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-C.2.2-r25.0ce4289c.webp",
+   "bytes": 82806
+  },
+  {
+   "id": "s-C.2.3-r15",
+   "kind": "tribune",
+   "sector": "C.2.3",
+   "row": "15",
+   "mk": "s:C.2.3 r:15 t:11",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-C.2.3-r15.98d5abd4.webp",
+   "bytes": 85222
+  },
+  {
+   "id": "s-C.2.3-r20",
+   "kind": "tribune",
+   "sector": "C.2.3",
+   "row": "20",
+   "mk": "s:C.2.3 r:20 t:11",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-C.2.3-r20.a30fe19b.webp",
+   "bytes": 82314
+  },
+  {
+   "id": "s-C.2.3-r25",
+   "kind": "tribune",
+   "sector": "C.2.3",
+   "row": "25",
+   "mk": "s:C.2.3 r:25 t:11",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-C.2.3-r25.085097e5.webp",
+   "bytes": 86114
+  },
+  {
+   "id": "s-C.2.4-r15",
+   "kind": "tribune",
+   "sector": "C.2.4",
+   "row": "15",
+   "mk": "s:C.2.4 r:15 t:11",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-C.2.4-r15.c12508b6.webp",
+   "bytes": 77300
+  },
+  {
+   "id": "s-C.2.4-r20",
+   "kind": "tribune",
+   "sector": "C.2.4",
+   "row": "20",
+   "mk": "s:C.2.4 r:20 t:11",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-C.2.4-r20.01726d2f.webp",
+   "bytes": 78366
+  },
+  {
+   "id": "s-C.2.4-r25",
+   "kind": "tribune",
+   "sector": "C.2.4",
+   "row": "25",
+   "mk": "s:C.2.4 r:25 t:11",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-C.2.4-r25.f95ee9aa.webp",
+   "bytes": 83714
+  },
+  {
+   "id": "s-C.2.5-r15",
+   "kind": "tribune",
+   "sector": "C.2.5",
+   "row": "15",
+   "mk": "s:C.2.5 r:15 t:11",
+   "rows": [
+    13,
+    17
+   ],
+   "file": "s-C.2.5-r15.8d947040.webp",
+   "bytes": 74594
+  },
+  {
+   "id": "s-C.2.5-r20",
+   "kind": "tribune",
+   "sector": "C.2.5",
+   "row": "20",
+   "mk": "s:C.2.5 r:20 t:11",
+   "rows": [
+    18,
+    22
+   ],
+   "file": "s-C.2.5-r20.4eb89c14.webp",
+   "bytes": 72340
+  },
+  {
+   "id": "s-C.2.5-r25",
+   "kind": "tribune",
+   "sector": "C.2.5",
+   "row": "25",
+   "mk": "s:C.2.5 r:25 t:11",
+   "rows": [
+    23,
+    27
+   ],
+   "file": "s-C.2.5-r25.1cead634.webp",
+   "bytes": 79300
+  },
+  {
+   "id": "s-C.3.1-r4",
+   "kind": "tribune",
+   "sector": "C.3.1",
+   "row": "4",
+   "mk": "s:C.3.1 r:4 t:3",
+   "rows": [
+    2,
+    6
+   ],
+   "file": "s-C.3.1-r4.b1d83065.webp",
+   "bytes": 70976
+  },
+  {
+   "id": "s-C.3.1-r9",
+   "kind": "tribune",
+   "sector": "C.3.1",
+   "row": "9",
+   "mk": "s:C.3.1 r:9 t:5",
+   "rows": [
+    7,
+    11
+   ],
+   "file": "s-C.3.1-r9.3a04b87d.webp",
+   "bytes": 71820
+  },
+  {
+   "id": "s-C.3.1-r14",
+   "kind": "tribune",
+   "sector": "C.3.1",
+   "row": "14",
+   "mk": "s:C.3.1 r:14 t:5",
+   "rows": [
+    12,
+    16
+   ],
+   "file": "s-C.3.1-r14.5bf18f7a.webp",
+   "bytes": 73046
+  },
+  {
+   "id": "s-C.3.2-r3",
+   "kind": "tribune",
+   "sector": "C.3.2",
+   "row": "3",
+   "mk": "s:C.3.2 r:3 t:12",
+   "rows": [
+    1,
+    6
+   ],
+   "file": "s-C.3.2-r3.a1cb9f92.webp",
+   "bytes": 85048
+  },
+  {
+   "id": "s-C.3.2-r9",
+   "kind": "tribune",
+   "sector": "C.3.2",
+   "row": "9",
+   "mk": "s:C.3.2 r:9 t:12",
+   "rows": [
+    7,
+    11
+   ],
+   "file": "s-C.3.2-r9.21f4ae48.webp",
+   "bytes": 79012
+  },
+  {
+   "id": "s-C.3.2-r14",
+   "kind": "tribune",
+   "sector": "C.3.2",
+   "row": "14",
+   "mk": "s:C.3.2 r:14 t:12",
+   "rows": [
+    12,
+    16
+   ],
+   "file": "s-C.3.2-r14.9bce48c6.webp",
+   "bytes": 78840
+  },
+  {
+   "id": "s-C.3.3-r3",
+   "kind": "tribune",
+   "sector": "C.3.3",
+   "row": "3",
+   "mk": "s:C.3.3 r:3 t:12",
+   "rows": [
+    1,
+    6
+   ],
+   "file": "s-C.3.3-r3.17918b91.webp",
+   "bytes": 84228
+  },
+  {
+   "id": "s-C.3.3-r9",
+   "kind": "tribune",
+   "sector": "C.3.3",
+   "row": "9",
+   "mk": "s:C.3.3 r:9 t:12",
+   "rows": [
+    7,
+    11
+   ],
+   "file": "s-C.3.3-r9.8504ee6d.webp",
+   "bytes": 78970
+  },
+  {
+   "id": "s-C.3.3-r14",
+   "kind": "tribune",
+   "sector": "C.3.3",
+   "row": "14",
+   "mk": "s:C.3.3 r:14 t:12",
+   "rows": [
+    12,
+    16
+   ],
+   "file": "s-C.3.3-r14.4e4ccfaa.webp",
+   "bytes": 78840
+  },
+  {
+   "id": "s-C.3.4-r4",
+   "kind": "tribune",
+   "sector": "C.3.4",
+   "row": "4",
+   "mk": "s:C.3.4 r:4 t:12",
+   "rows": [
+    2,
+    6
+   ],
+   "file": "s-C.3.4-r4.ab00a4bf.webp",
+   "bytes": 78058
+  },
+  {
+   "id": "s-C.3.4-r9",
+   "kind": "tribune",
+   "sector": "C.3.4",
+   "row": "9",
+   "mk": "s:C.3.4 r:9 t:12",
+   "rows": [
+    7,
+    11
+   ],
+   "file": "s-C.3.4-r9.4ab95f87.webp",
+   "bytes": 76108
+  },
+  {
+   "id": "s-C.3.4-r14",
+   "kind": "tribune",
+   "sector": "C.3.4",
+   "row": "14",
+   "mk": "s:C.3.4 r:14 t:12",
+   "rows": [
+    12,
+    16
+   ],
+   "file": "s-C.3.4-r14.a9eb6bff.webp",
+   "bytes": 75946
+  },
+  {
+   "id": "s-C.3.5-r4",
+   "kind": "tribune",
+   "sector": "C.3.5",
+   "row": "4",
+   "mk": "s:C.3.5 r:4 t:12",
+   "rows": [
+    2,
+    6
+   ],
+   "file": "s-C.3.5-r4.2fd9018c.webp",
+   "bytes": 70658
+  },
+  {
+   "id": "s-C.3.5-r9",
+   "kind": "tribune",
+   "sector": "C.3.5",
+   "row": "9",
+   "mk": "s:C.3.5 r:9 t:12",
+   "rows": [
+    7,
+    11
+   ],
+   "file": "s-C.3.5-r9.206744e7.webp",
+   "bytes": 70188
+  },
+  {
+   "id": "s-C.3.5-r14",
+   "kind": "tribune",
+   "sector": "C.3.5",
+   "row": "14",
+   "mk": "s:C.3.5 r:14 t:12",
+   "rows": [
+    12,
+    16
+   ],
+   "file": "s-C.3.5-r14.61eb4090.webp",
+   "bytes": 69684
+  },
+  {
+   "id": "t-r1-left",
+   "kind": "table",
+   "tableRow": 1,
+   "side": "left",
+   "mk": "t:Masa_3",
+   "tables": [
+    1,
+    2,
+    3,
+    16,
+    17
+   ],
+   "file": "t-r1-left.fdc2b96e.webp",
+   "bytes": 48856
+  },
+  {
+   "id": "t-r1-centre",
+   "kind": "table",
+   "tableRow": 1,
+   "side": "centre",
+   "mk": "t:Masa_8",
+   "tables": [
+    6,
+    7,
+    8,
+    21,
+    22
+   ],
+   "file": "t-r1-centre.5ad3868e.webp",
+   "bytes": 28346
+  },
+  {
+   "id": "t-r1-right",
+   "kind": "table",
+   "tableRow": 1,
+   "side": "right",
+   "mk": "t:Masa_13",
+   "tables": [
+    11,
+    12,
+    13,
+    26,
+    27
+   ],
+   "file": "t-r1-right.535020e2.webp",
+   "bytes": 42622
+  },
+  {
+   "id": "t-r2-left",
+   "kind": "table",
+   "tableRow": 2,
+   "side": "left",
+   "mk": "t:Masa_18",
+   "tables": [
+    4,
+    5,
+    18,
+    19,
+    20
+   ],
+   "file": "t-r2-left.986b428d.webp",
+   "bytes": 48158
+  },
+  {
+   "id": "t-r2-centre",
+   "kind": "table",
+   "tableRow": 2,
+   "side": "centre",
+   "mk": "t:Masa_23",
+   "tables": [
+    9,
+    10,
+    23,
+    24,
+    25
+   ],
+   "file": "t-r2-centre.703287ef.webp",
+   "bytes": 28722
+  },
+  {
+   "id": "t-r2-right",
+   "kind": "table",
+   "tableRow": 2,
+   "side": "right",
+   "mk": "t:Masa_28",
+   "tables": [
+    14,
+    15,
+    28,
+    29,
+    30
+   ],
+   "file": "t-r2-right.ac84b69e.webp",
+   "bytes": 45896
+  },
+  {
+   "id": "t-r3-left",
+   "kind": "table",
+   "tableRow": 3,
+   "side": "left",
+   "mk": "t:Masa_33",
+   "tables": [
+    31,
+    32,
+    33,
+    46,
+    47
+   ],
+   "file": "t-r3-left.ddccd1cf.webp",
+   "bytes": 53244
+  },
+  {
+   "id": "t-r3-centre",
+   "kind": "table",
+   "tableRow": 3,
+   "side": "centre",
+   "mk": "t:Masa_38",
+   "tables": [
+    36,
+    37,
+    38,
+    51,
+    52
+   ],
+   "file": "t-r3-centre.6c4edbee.webp",
+   "bytes": 37456
+  },
+  {
+   "id": "t-r3-right",
+   "kind": "table",
+   "tableRow": 3,
+   "side": "right",
+   "mk": "t:Masa_43",
+   "tables": [
+    41,
+    42,
+    43,
+    56,
+    57
+   ],
+   "file": "t-r3-right.c8d1c9b3.webp",
+   "bytes": 48000
+  },
+  {
+   "id": "t-r4-left",
+   "kind": "table",
+   "tableRow": 4,
+   "side": "left",
+   "mk": "t:Masa_48",
+   "tables": [
+    34,
+    35,
+    48,
+    49,
+    50,
+    64,
+    65
+   ],
+   "file": "t-r4-left.f8157869.webp",
+   "bytes": 55338
+  },
+  {
+   "id": "t-r4-centre",
+   "kind": "table",
+   "tableRow": 4,
+   "side": "centre",
+   "mk": "t:Masa_53",
+   "tables": [
+    39,
+    40,
+    53,
+    54,
+    55,
+    69,
+    70
+   ],
+   "file": "t-r4-centre.edcee2e0.webp",
+   "bytes": 38436
+  },
+  {
+   "id": "t-r4-right",
+   "kind": "table",
+   "tableRow": 4,
+   "side": "right",
+   "mk": "t:Masa_58",
+   "tables": [
+    44,
+    45,
+    58,
+    59,
+    60,
+    74,
+    75
+   ],
+   "file": "t-r4-right.2628c669.webp",
+   "bytes": 53348
+  },
+  {
+   "id": "t-r5-left",
+   "kind": "table",
+   "tableRow": 5,
+   "side": "left",
+   "mk": "t:Masa_63",
+   "tables": [
+    61,
+    62,
+    63
+   ],
+   "file": "t-r5-left.145b63a2.webp",
+   "bytes": 57238
+  },
+  {
+   "id": "t-r5-centre",
+   "kind": "table",
+   "tableRow": 5,
+   "side": "centre",
+   "mk": "t:Masa_68",
+   "tables": [
+    66,
+    67,
+    68
+   ],
+   "file": "t-r5-centre.8e65ee40.webp",
+   "bytes": 41702
+  },
+  {
+   "id": "t-r5-right",
+   "kind": "table",
+   "tableRow": 5,
+   "side": "right",
+   "mk": "t:Masa_73",
+   "tables": [
+    71,
+    72,
+    73
+   ],
+   "file": "t-r5-right.be269a0b.webp",
+   "bytes": 53050
+  },
+  {
+   "id": "t-r6-left",
+   "kind": "table",
+   "tableRow": 6,
+   "side": "left",
+   "mk": "t:Masa_78",
+   "tables": [
+    78,
+    79,
+    80,
+    94,
+    95
+   ],
+   "file": "t-r6-left.9826c79c.webp",
+   "bytes": 56226
+  },
+  {
+   "id": "t-r6-centre",
+   "kind": "table",
+   "tableRow": 6,
+   "side": "centre",
+   "mk": "t:Masa_83",
+   "tables": [
+    83,
+    84,
+    85,
+    99,
+    100
+   ],
+   "file": "t-r6-centre.a6c3891f.webp",
+   "bytes": 45784
+  },
+  {
+   "id": "t-r6-right",
+   "kind": "table",
+   "tableRow": 6,
+   "side": "right",
+   "mk": "t:Masa_88",
+   "tables": [
+    88,
+    89,
+    90,
+    104,
+    105
+   ],
+   "file": "t-r6-right.a77ab755.webp",
+   "bytes": 55464
+  },
+  {
+   "id": "t-r7-left",
+   "kind": "table",
+   "tableRow": 7,
+   "side": "left",
+   "mk": "t:Masa_93",
+   "tables": [
+    76,
+    77,
+    91,
+    92,
+    93,
+    106
+   ],
+   "file": "t-r7-left.f916ce58.webp",
+   "bytes": 55878
+  },
+  {
+   "id": "t-r7-centre",
+   "kind": "table",
+   "tableRow": 7,
+   "side": "centre",
+   "mk": "t:Masa_98",
+   "tables": [
+    81,
+    82,
+    96,
+    97,
+    98
+   ],
+   "file": "t-r7-centre.47302729.webp",
+   "bytes": 48766
+  },
+  {
+   "id": "t-r7-right",
+   "kind": "table",
+   "tableRow": 7,
+   "side": "right",
+   "mk": "t:Masa_103",
+   "tables": [
+    86,
+    87,
+    101,
+    102,
+    103
+   ],
+   "file": "t-r7-right.8d772bd2.webp",
+   "bytes": 55730
+  },
+  {
+   "id": "t-r8-left",
+   "kind": "table",
+   "tableRow": 8,
+   "side": "left",
+   "mk": "t:Masa_108",
+   "tables": [
+    108,
+    109,
+    110
+   ],
+   "file": "t-r8-left.cc449131.webp",
+   "bytes": 58478
+  },
+  {
+   "id": "t-r8-centre",
+   "kind": "table",
+   "tableRow": 8,
+   "side": "centre",
+   "mk": "t:Masa_113",
+   "tables": [
+    113,
+    114,
+    115
+   ],
+   "file": "t-r8-centre.88efa1ec.webp",
+   "bytes": 46908
+  },
+  {
+   "id": "t-r8-right",
+   "kind": "table",
+   "tableRow": 8,
+   "side": "right",
+   "mk": "t:Masa_118",
+   "tables": [
+    118,
+    119,
+    120
+   ],
+   "file": "t-r8-right.dc87c373.webp",
+   "bytes": 57540
+  },
+  {
+   "id": "t-r9-left",
+   "kind": "table",
+   "tableRow": 9,
+   "side": "left",
+   "mk": "t:Masa_123",
+   "tables": [
+    107,
+    121,
+    122,
+    123,
+    136,
+    137
+   ],
+   "file": "t-r9-left.eeae8227.webp",
+   "bytes": 60212
+  },
+  {
+   "id": "t-r9-centre",
+   "kind": "table",
+   "tableRow": 9,
+   "side": "centre",
+   "mk": "t:Masa_128",
+   "tables": [
+    111,
+    112,
+    126,
+    127,
+    128,
+    141,
+    142
+   ],
+   "file": "t-r9-centre.12e497b2.webp",
+   "bytes": 53394
+  },
+  {
+   "id": "t-r9-right",
+   "kind": "table",
+   "tableRow": 9,
+   "side": "right",
+   "mk": "t:Masa_133",
+   "tables": [
+    116,
+    117,
+    131,
+    132,
+    133,
+    146,
+    147
+   ],
+   "file": "t-r9-right.8d247f6d.webp",
+   "bytes": 58894
+  },
+  {
+   "id": "t-r10-left",
+   "kind": "table",
+   "tableRow": 10,
+   "side": "left",
+   "mk": "t:Masa_138",
+   "tables": [
+    124,
+    125,
+    138,
+    139,
+    140,
+    154,
+    155
+   ],
+   "file": "t-r10-left.049f5d2a.webp",
+   "bytes": 62250
+  },
+  {
+   "id": "t-r10-centre",
+   "kind": "table",
+   "tableRow": 10,
+   "side": "centre",
+   "mk": "t:Masa_143",
+   "tables": [
+    129,
+    130,
+    143,
+    144,
+    145,
+    159,
+    160
+   ],
+   "file": "t-r10-centre.077f573a.webp",
+   "bytes": 49964
+  },
+  {
+   "id": "t-r10-right",
+   "kind": "table",
+   "tableRow": 10,
+   "side": "right",
+   "mk": "t:Masa_148",
+   "tables": [
+    134,
+    135,
+    148,
+    149,
+    150,
+    164,
+    165
+   ],
+   "file": "t-r10-right.4010143d.webp",
+   "bytes": 61066
+  },
+  {
+   "id": "t-r11-left",
+   "kind": "table",
+   "tableRow": 11,
+   "side": "left",
+   "mk": "t:Masa_153",
+   "tables": [
+    151,
+    152,
+    153,
+    166,
+    167
+   ],
+   "file": "t-r11-left.4ed00f10.webp",
+   "bytes": 64292
+  },
+  {
+   "id": "t-r11-centre",
+   "kind": "table",
+   "tableRow": 11,
+   "side": "centre",
+   "mk": "t:Masa_158",
+   "tables": [
+    156,
+    157,
+    158,
+    171,
+    172
+   ],
+   "file": "t-r11-centre.8c63bf4a.webp",
+   "bytes": 55128
+  },
+  {
+   "id": "t-r11-right",
+   "kind": "table",
+   "tableRow": 11,
+   "side": "right",
+   "mk": "t:Masa_163",
+   "tables": [
+    161,
+    162,
+    163,
+    176,
+    177
+   ],
+   "file": "t-r11-right.e8c93989.webp",
+   "bytes": 62572
+  },
+  {
+   "id": "t-r12-left",
+   "kind": "table",
+   "tableRow": 12,
+   "side": "left",
+   "mk": "t:Masa_168",
+   "tables": [
+    168,
+    169,
+    170
+   ],
+   "file": "t-r12-left.7cf8e66d.webp",
+   "bytes": 66844
+  },
+  {
+   "id": "t-r12-centre",
+   "kind": "table",
+   "tableRow": 12,
+   "side": "centre",
+   "mk": "t:Masa_173",
+   "tables": [
+    173,
+    174,
+    175
+   ],
+   "file": "t-r12-centre.4239c3e4.webp",
+   "bytes": 50972
+  },
+  {
+   "id": "t-r12-right",
+   "kind": "table",
+   "tableRow": 12,
+   "side": "right",
+   "mk": "t:Masa_178",
+   "tables": [
+    178,
+    179,
+    180
+   ],
+   "file": "t-r12-right.bd24c139.webp",
+   "bytes": 64624
+  },
+  {
+   "id": "standing",
+   "kind": "standing",
+   "mk": "z:Standing",
+   "file": "standing.ad9bf054.webp",
+   "bytes": 55056
+  }
+ ]
+}

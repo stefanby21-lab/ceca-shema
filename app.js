@@ -288,7 +288,7 @@
         if (!root || !root.querySelectorAll) return;
         Array.prototype.forEach.call(root.querySelectorAll(".pk-360"), function (b) {
           if (b.dataset.pregled === "1") return;
-          ((b.dataset.pregled = "1"), (b.innerHTML = OKO + '<span aria-hidden="true">' + (window.SeatMap.mode === '2d' ? 'На схемата ↗' : 'Преглед ↗') + '</span>'));
+          ((b.dataset.pregled = "1"), (b.innerHTML = OKO + '<span aria-hidden="true">' + 'Преглед ↗' + '</span>'));
         });
       }
       const list = document.getElementById("picklist");
@@ -1601,10 +1601,21 @@
     }
     function W(e) {
       if (window.SeatMap.mode === '2d') {
-        window.dispatchEvent(new CustomEvent('arena:map-focus'));
-        if (e === STANDING_MK) window.SeatMap.frameStanding();
-        else if (tb2.has(e)) window.SeatMap.frameTable(e);
-        else window.SeatMap.frameSeats([e]);
+        // Без WebGL: мястото се рамкира на схемата (както досега) и отгоре се отваря готовата картинка
+        // на изгледа от него. Диалогът се слага първи, а рамката - след като е нарисуван (под него
+        // и така и така не се вижда), за да се види картинката по-рано на бавен телефон.
+        const frame = () => {
+          window.dispatchEvent(new CustomEvent('arena:map-focus'));
+          if (e === STANDING_MK) window.SeatMap.frameStanding();
+          else if (tb2.has(e)) window.SeatMap.frameTable(e);
+          else window.SeatMap.frameSeats([e]);
+        };
+        const seat = h.get(e), table = tb2.get(e);
+        if (window.SeatViewImage && (e === STANDING_MK || seat || table)) {
+          const place = e === STANDING_MK ? STANDING_NAME : table ? table.name : 'Сектор ' + seat.s + ' · ред ' + seat.r;
+          window.SeatViewImage.open({ venue: o, mk: e, place });
+          requestAnimationFrame(() => setTimeout(frame, 0));
+        } else frame();
         return;
       }
       if (window.ArenaSeatView && o.meta?.venue === 'Арена 8888') {
@@ -1659,6 +1670,8 @@
     }),
       console.log("[app] ready"));
     window.SeatMapStartup && window.SeatMapStartup.appReady();
+    // Описът на готовите изгледи се тегли на празен ход: първото отваряне го намира готов.
+    window.SeatViews && window.SeatViews.warm();
   }
   function boot() {
     try {

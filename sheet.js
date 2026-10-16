@@ -272,7 +272,7 @@
       if(group.pano){
         const view=document.createElement('button');view.type='button';view.className='seatchip__view';
         view.innerHTML=EYE+label;
-        view.setAttribute('aria-label',(window.SeatMap?.mode==='2d'?'На схемата: ':'Изглед от мястото: ')+head+', '+span);
+        view.setAttribute('aria-label','Изглед от мястото: '+head+', '+span);
         view.addEventListener('click',()=>rowFor(group.pano)?.querySelector('.pk-360:not(.is-off)')?.click());
         chip.append(view);
       } else {

@@ -311,11 +311,11 @@
       // невидим, за да не се разместват цените и хиксовете по редовете.
       var st = t("button", "pk-360");
       ((st.type = "button"),
-        (st.innerHTML = '<span aria-hidden="true">' + (window.SeatMap?.mode === '2d' ? 'На схемата ↗' : 'От мястото ↗') + '</span>'),
-        st.setAttribute("aria-label", (window.SeatMap?.mode === "2d" ? "На схемата: " : "3D изглед от ") + l.sector + ", " + l.seat),
+        (st.innerHTML = '<span aria-hidden="true">От мястото ↗</span>'),
+        st.setAttribute("aria-label", (window.SeatMap?.mode === "2d" ? "Изглед от мястото: " : "3D изглед от ") + l.sector + ", " + l.seat),
         l.pano
           ? (st.addEventListener("click",function(){if(typeof n.on360 === "function")n.on360(l.pano);}),
-            (st.title = window.SeatMap?.mode === "2d" ? "Вижте мястото на схемата" : "Вижте сцената от това място · 3D ориентир"))
+            (st.title = window.SeatMap?.mode === "2d" ? "Вижте изгледа от това място" : "Вижте сцената от това място · 3D ориентир"))
           : (st.classList.add("is-off"), (st.tabIndex = -1), st.setAttribute("aria-hidden", "true")),
         u.appendChild(st),
         u.appendChild(t("span", "pk-price", O(l.eur))));
@@ -468,7 +468,7 @@
         typeof window.__onBuy == "function" && window.__onBuy();
       }));
     var E = t("button", "btn-360");
-    if (((E.type = "button"), (E.innerHTML = ye), E.appendChild(document.createTextNode(window.SeatMap?.mode === "2d" ? "Вижте на схемата" : "Гледка от мястото")), e.pano)) {
+    if (((E.type = "button"), (E.innerHTML = ye), E.appendChild(document.createTextNode("Гледка от мястото")), e.pano)) {
       var w = e.pano;
       E.addEventListener("click", function () {
         typeof window.__on360 == "function" && window.__on360(w);

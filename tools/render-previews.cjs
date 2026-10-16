@@ -14,47 +14,17 @@
      PLAYWRIGHT_CORE    път до пакета playwright-core (иначе се търси в node_modules и в ~/.npm/_npx)
      HEADLESS_SHELL     път до chrome-headless-shell (иначе се търси в кеша на Playwright)
      PREVIEW_MAX_KB     таван на файла, по подразбиране 80
-   Браузърът е обикновен, без постоянен профил: Playwright си прави временен и го трие при затваряне.
+   Браузърът и сървърът са в tools/headless.cjs: известен профил във временната папка, който се трие при край, грешка и сигнал.
    След пускане: bash tools/stamp.sh (отпечатъците на картинките са в index.html). */
-const http = require('node:http');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const cp = require('node:child_process');
-const { publicRelative } = require('./static-guard.cjs');
+const { ROOT, serve, closeServer, hasCwebp, launchSession } = require('./headless.cjs');
 
-const ROOT = path.resolve(__dirname, '..');
-const HOME = os.homedir();
 const MAX_BYTES = (Number(process.env.PREVIEW_MAX_KB) || 80) * 1024;
 const START_QUALITY = 75;
 const MIN_QUALITY = 40;
-
-// Първият съществуващ път от списък шаблони с една звездичка в папка (най-новата версия първа).
-function newestMatch(parent, pattern, tail) {
-  let names = [];
-  try { names = fs.readdirSync(parent); } catch (_) { return null; }
-  const hits = names.filter((name) => pattern.test(name)).sort().reverse();
-  for (const name of hits) {
-    const candidate = path.join(parent, name, ...tail);
-    if (fs.existsSync(candidate)) return candidate;
-  }
-  return null;
-}
-function findPlaywrightCore() {
-  if (process.env.PLAYWRIGHT_CORE) return process.env.PLAYWRIGHT_CORE;
-  try { return require.resolve('playwright-core', { paths: [ROOT, process.cwd()] }); } catch (_) { /* няма в проекта */ }
-  return newestMatch(path.join(HOME, '.npm', '_npx'), /^[0-9a-f]+$/, ['node_modules', 'playwright-core']);
-}
-function findHeadlessShell() {
-  if (process.env.HEADLESS_SHELL) return process.env.HEADLESS_SHELL;
-  for (const cache of [path.join(HOME, 'Library', 'Caches', 'ms-playwright'), path.join(HOME, '.cache', 'ms-playwright')]) {
-    for (const dir of ['chrome-headless-shell-mac-arm64', 'chrome-headless-shell-mac-x64', 'chrome-headless-shell-linux64']) {
-      const hit = newestMatch(cache, /^chromium_headless_shell-\d+$/, [dir, 'chrome-headless-shell']);
-      if (hit) return hit;
-    }
-  }
-  return null;
-}
 
 const TARGETS = {
   'map-desktop': { out: 'preview-map-desktop.webp', width: 1440, height: 900, scale: 1, mobile: false, query: '?restore=1' },
@@ -62,37 +32,6 @@ const TARGETS = {
   'plan-desktop': { out: 'preview-plan-desktop.webp', width: 1440, height: 900, scale: 1, mobile: false, query: '?restore=1&view=2d' },
   'plan-mobile': { out: 'preview-plan-mobile.webp', width: 390, height: 844, scale: 2, mobile: true, query: '?restore=1&view=2d' },
 };
-
-// Само файловете, които сайтът наистина качва (tools/static-guard.cjs); частните данни на друга
-// зала, точковите файлове и всичко извън корена никога не се сервират.
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.svg': 'image/svg+xml', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2',
-  '.woff': 'font/woff', '.json': 'application/json', '.pbf': 'application/x-protobuf' };
-
-function serve() {
-  let realRoot;
-  try { realRoot = fs.realpathSync(ROOT); } catch (_) { realRoot = ROOT; }
-  const server = http.createServer((req, res) => {
-    const rel = publicRelative(req.url || '/');
-    let file = null;
-    if (rel) {
-      try {
-        // Символна връзка не може да изведе навън: окончателният път трябва да е под корена.
-        const real = fs.realpathSync(path.join(ROOT, rel));
-        if (real.startsWith(realRoot + path.sep) && fs.statSync(real).isFile()) file = real;
-      } catch (_) { file = null; }
-    }
-    if (!file) { res.writeHead(404); res.end('not found'); return; }
-    res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
-}
-
-function hasCwebp() {
-  const probe = cp.spawnSync('cwebp', ['-version'], { timeout: 10000 });
-  return probe.status === 0;
-}
 
 // cwebp, ако го има; иначе кодерът на платното в браузъра. Качеството пада стъпка по
 // стъпка, докато файлът влезе в тавана - числото, с което е записан, се връща.
@@ -169,47 +108,25 @@ async function main() {
   const wanted = process.argv.slice(2);
   const names = wanted.length ? wanted : Object.keys(TARGETS);
   for (const name of names) if (!TARGETS[name]) throw new Error('unknown target ' + name + ' (' + Object.keys(TARGETS).join(', ') + ')');
-  const core = findPlaywrightCore();
-  if (!core) throw new Error('playwright-core not found: set PLAYWRIGHT_CORE or install it');
-  const shell = findHeadlessShell();
-  if (!shell || !fs.existsSync(shell)) throw new Error('chrome-headless-shell not found: run "npx playwright install chromium-headless-shell" or set HEADLESS_SHELL');
-  const { chromium } = require(core);
   const server = await serve();
   const base = 'http://127.0.0.1:' + server.address().port;
-  let browser = null;
-  let closing = null;
-  // Един затварящ път за край, грешка и сигнал: браузърът се затваря и се изчаква да излезе
-  // (Playwright трие временния си профил), после спира и сървърът.
-  const cleanup = () => {
-    if (closing) return closing;
-    closing = (async () => {
-      const child = browser && browser.process ? browser.process() : null;
-      try {
-        if (browser) await Promise.race([browser.close(), new Promise((_, reject) => setTimeout(() => reject(new Error('close timeout')), 8000))]);
-      } catch (_) {
-        if (child && child.exitCode === null) { try { child.kill('SIGKILL'); } catch (__) { /* вече го няма */ } }
-      }
-      await new Promise((resolve) => server.close(resolve));
-      if (typeof server.closeAllConnections === 'function') server.closeAllConnections();
-    })();
-    return closing;
-  };
-  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { cleanup().finally(() => process.exit(130)); });
   const results = [];
   try {
-    browser = await chromium.launch({ executablePath: shell, headless: true, args: ['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
     for (const name of names) {
       const spec = TARGETS[name];
-      const context = await browser.newContext({
+      // Един браузър на цел (различна гъстота и режим са на ниво контекст). tools/headless.cjs го затваря при
+      // край, грешка и сигнал, убива останалото и трие профила.
+      const session = await launchSession({
+        args: ['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
         viewport: { width: spec.width, height: spec.height },
         deviceScaleFactor: spec.scale,
         isMobile: spec.mobile,
         hasTouch: spec.mobile,
       });
-      try { results.push(await renderOne(context, base, name, spec)); } finally { await context.close().catch(() => {}); }
+      try { results.push(await renderOne(session.context, base, name, spec)); } finally { await session.close(); }
     }
   } finally {
-    await cleanup();
+    await closeServer(server);
   }
   console.log(JSON.stringify(results));
 }

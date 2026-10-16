@@ -8,7 +8,7 @@ const path = require('node:path');
 // Файловете в корена, които сайтът качва.
 const ROOT_FILES = new Set([
   'index.html', 'startup.js', 'app.js', 'ui.js', 'sheet.js', 'map.js', 'map-svg.js', 'seatfinder.js',
-  'party-memory.js', 'arena-geometry.js', 'arena-seatview.js', 'seatview3d.js', 'ceca-plan-svg.js',
+  'party-memory.js', 'seatviews.js', 'seatview-image.js', 'arena-geometry.js', 'arena-seatview.js', 'seatview3d.js', 'ceca-plan-svg.js',
   'venue-data-ceca.js', 'styles.css', 'kupibileti-logo.svg',
 ]);
 // Папките, които сайтът качва изцяло.
