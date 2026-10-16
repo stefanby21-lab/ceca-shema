@@ -2604,7 +2604,11 @@ button {
     /* Кадърът на картата е ВИДИМАТА зона над листа в най-ниското му
        положение. Иначе fitBounds центрира залата в цялата площ и тя увисва
        нагоре, наполовина под хедъра, с празнина отдолу. */
-    height: calc(100% - var(--sheet-peek, 96px));
+    /* Началната височина на листа е тази на затворения (sheet.js: между 132 и 156 px, 18% от
+       работното поле), а не 96 px и 52%: иначе панелът се свиваше и всичко в него и над него се
+       местеше при зареждането. sheet.js само я потвърждава с px. Проценти, не vh: те следват
+       работното поле, не лентата на браузъра. */
+    height: calc(100% - var(--sheet-peek, clamp(132px, 18%, 156px)));
   }
   .sidebar {
     position: absolute;
@@ -2612,7 +2616,7 @@ button {
     right: 0;
     bottom: 0;
     z-index: 6;
-    height: var(--sheet-h, 52%);
+    height: var(--sheet-h, clamp(132px, 18%, 156px));
     max-height: 88%;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     border-left: 0;
@@ -3325,7 +3329,7 @@ button {
     top: auto;
     /* Вдигнатият лист не бива да я изхвърля над лентата: горната граница е
        точно под нея. */
-    bottom: min(calc(var(--sheet-h, 143px) + 12px), calc(100% - var(--rail-h, 66px) - 56px));
+    bottom: min(calc(var(--sheet-h, clamp(132px, 18%, 156px)) + 12px), calc(100% - var(--rail-h, 66px) - 56px));
     left: 50%;
     right: auto;
     transform: translateX(-50%);
@@ -3911,6 +3915,9 @@ button {
 #filterbar .fb-pill-rec { min-height: 46px; }
 .sheet-summary { display: none; }
 @media(max-width:880px) {
+ /* Преди sheet.js листът е вече във вида си на затворен: само дръжка. Филтрите и списъкът се
+    показват едва във вдигнат лист (data-mode), така че нищо не се мести, когато скриптът тръгне. */
+ #sheet:not([data-mode]) > .sidebar-body, #sheet:not([data-mode]) > #filterbar { display: none; }
  #sheet.sidebar { max-height: 100%; padding-bottom: env(safe-area-inset-bottom,0px); border-radius: 24px 24px 0 0; box-shadow: 0 -8px 32px #142e5424; }
  #sheet-handle { height: 48px; display: grid; grid-template-columns: 1fr auto; align-content: center; column-gap: 12px; padding: 10px 16px 4px; position: relative; text-align: left; color: #163c80; }
  #sheet-handle .sheet-grip { position: absolute; left: calc(50% - 22px); top: 6px; width: 44px; height: 4px; background: #a2b9dc; }
@@ -4029,7 +4036,10 @@ button {
 }
 
 /* Startup feedback remains available even when a graphics/script failure stops the app. */
-.startup-status { position:fixed;left:50%;top:45%;transform:translateX(-50%);padding:16px 24px;border-radius:20px;background:#fff;color:#153d8a;z-index:5;pointer-events:none; }
+.startup-status { position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-sizing:border-box;max-width:calc(100% - 32px);padding:14px 22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;border-radius:20px;background:#fff;color:#153d8a;z-index:5;pointer-events:none; }
+/* Стои в картата, на средата на видимата ѝ част: на телефон картата свършва над листа, на широк екран
+   панелът е върху дясната колона, затова центърът е на останалото. Със SVG режима колоната вече е извън картата. */
+@media (min-width: 881px) { #map:not(.map-svg) .startup-status { left:calc((100% - clamp(320px, 30vw, 400px)) / 2); } }
 .startup-failure { position:fixed;inset:0;z-index:10000;background:#eef2f8;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:#153d8a; }
 .startup-failure[hidden],.startup-status[hidden] { display:none; }
 .startup-failure h2 { font-size:24px; }

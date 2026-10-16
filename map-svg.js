@@ -73,10 +73,15 @@ window.SeatMap = (function () {
     // Номерата са за точния кадър: при движение се скриват и се връщат при пускане.
     numbers.style.display = 'none';
   }
+  // Чиста: преобразуването (мащаб и отместване в px на картата), което показва кадър `cam`
+  // върху чертежа, замразен с viewBox `base`. Важи само при еднакво съотношение на двата кадъра
+  // и на картата; затова размерът на картата никога не се сменя по време на жест (виж resize).
+  function liveFrame(base, cam, w, h) {
+    return { k: base.w / cam.w, tx: (base.x - cam.x) / cam.w * w, ty: (base.y - cam.y) / cam.h * h };
+  }
   function paintLive() {
-    const k = live.base.w / camera.w, w = host.clientWidth, h = host.clientHeight;
-    const tx = (live.base.x - camera.x) / camera.w * w, ty = (live.base.y - camera.y) / camera.h * h;
-    svg.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + k + ')';
+    const f = liveFrame(live.base, camera, host.clientWidth, host.clientHeight);
+    svg.style.transform = 'translate(' + f.tx + 'px,' + f.ty + 'px) scale(' + f.k + ')';
   }
   function endLive() {
     if (!live) return;
@@ -479,6 +484,10 @@ window.SeatMap = (function () {
     getZoom, getMinZoom: () => 4, getPitch: () => 0, getBearing: () => 0,
     resize() {
       if (!camera) return;
+      // Промяна на размера по време на жест (завъртане на телефона): жестът първо се записва
+      // с размера, при който е започнал, и чак тогава картата се пренарежда. Следващото движение
+      // на пръста започва нов жест върху новия размер (beginLive е мързелив), с нов отправен кадър.
+      endLive();
       const home = getZoom() < 4.01;
       homeCamera = fitHome();
       const centerY = camera.y + camera.h / 2;
@@ -491,7 +500,7 @@ window.SeatMap = (function () {
     }
   };
   return {
-    mode: '2d', init, rotateToSection, reset, frameSeats, frameTable, frameTables,
+    mode: '2d', _liveFrame: liveFrame, init, rotateToSection, reset, frameSeats, frameTable, frameTables,
     zoomToSeats: key => frameSeats([key]), frameTableLevel: frameTables,
     tablesOfLevel: level => Array.from(tables.values()).filter(f => !f.properties.sold && f.properties.tableLevel === level).map(f => f.properties),
     selectSeat(keys) { selected = new Set(list(keys)); schedule(); },

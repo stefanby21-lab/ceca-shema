@@ -159,11 +159,11 @@ bash tools/sync-engine.sh
 Картинките се рисуват от истинската схема, в рамките на 1440x900 и 390x844 (2x):
 
 ```bash
-node tools/render-previews.cjs        # и четирите; PREVIEW_PROFILE=<папка> за общ профил
+node tools/render-previews.cjs        # и четирите
 bash tools/stamp.sh                   # отпечатъците им са в index.html
 ```
 
-Скриптът иска `playwright-core` и `chromium-headless-shell` (никога инсталиран Chrome), качеството
+Скриптът иска `playwright-core` и `chromium-headless-shell` (никога инсталиран Chrome; търси ги сам, или `PLAYWRIGHT_CORE` и `HEADLESS_SHELL`). Браузърът е без постоянен профил и се затваря при край, грешка и сигнал. Локалният му сървър сервира само файловете на сайта (`tools/static-guard.cjs`). Качеството
 е около 75 и файлът е под 80 KB. Размерът на всяка картинка е записан в `index.html` и се пази от
 `tests/preview.test.cjs`. Прегенерирай ги, когато схемата сменя вида си.
 

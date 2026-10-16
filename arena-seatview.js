@@ -342,7 +342,13 @@ window.ArenaSeatView = (function () {
           const set = seatSets[tier][wedge];
           for (const part of ["cushion", "back"]) {
             const mesh = set[part], source = seatMatrix[part];
-            if (mesh.instanceMatrix.count < ids.length) mesh.instanceMatrix = new T.InstancedBufferAttribute(new Float32Array(ids.length * 16), 16);
+            if (mesh.instanceMatrix.count < ids.length) {
+              // three r160 няма InstancedMesh.dispose(): събитието освобождава качения буфер на
+              // атрибута, който се сменя (иначе всяко нарастване оставяше буфер във видеопамет).
+              // Запасът от 25% прави нарастването рядко при смяна на гледната точка.
+              mesh.dispatchEvent({ type: "dispose" });
+              mesh.instanceMatrix = new T.InstancedBufferAttribute(new Float32Array(Math.ceil(ids.length * 1.25) * 16), 16);
+            }
             const target = mesh.instanceMatrix.array;
             for (let k = 0; k < ids.length; k++) target.set(source.subarray(ids[k] * 16, ids[k] * 16 + 16), k * 16);
             mesh.count = ids.length;

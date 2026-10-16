@@ -33,7 +33,7 @@
       href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%23FFFFFF%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-family=%27Helvetica,Arial%27 font-size=%2717%27 font-weight=%27bold%27 fill=%27%23153D8A%27 text-anchor=%27middle%27%3E8%3C/text%3E%3C/svg%3E"
     />
     <link rel="stylesheet" href="vendor/maplibre-gl.css?v=e6e97fa50c.7.1" />
-    <link rel="stylesheet" href="styles.css?v=81b3993df0" />
+    <link rel="stylesheet" href="styles.css?v=b2573fdf9d" />
   </head>
   <body>
     <div id="app">
@@ -76,7 +76,7 @@
             aria-hidden="true"
             data-plan-desktop="assets/preview-plan-desktop.webp?v=f29ed11c0a"
             data-plan-desktop-size="1040x836"
-            data-plan-mobile="assets/preview-plan-mobile.webp?v=aa5d894036"
+            data-plan-mobile="assets/preview-plan-mobile.webp?v=bfcad09116"
             data-plan-mobile-size="780x1298"
           >
             <picture>
@@ -96,6 +96,7 @@
               />
             </picture>
           </div>
+          <div id="startup-status" class="startup-status" role="status">Зареждане на схемата…</div>
         </main>
 
         <aside class="sidebar" id="sheet">
@@ -180,7 +181,6 @@
       </div>
     </div>
 
-    <div id="startup-status" class="startup-status" role="status">Зареждане на схемата…</div>
     <section id="startup-failure" class="startup-failure" role="alert" hidden>
       <h2 id="startup-title">Схемата не успя да се зареди</h2>
       <p id="startup-hint">Опитайте отново, за да заредите актуалните файлове.</p>
@@ -191,9 +191,9 @@
     <script type="application/json" data-webgl="true" data-src="vendor/maplibre-gl.js?v=8d00c7860a.7.1"></script>
     <script type="application/json" data-src="venue-data-ceca.js?v=60b59de029"></script>
     <script type="application/json" data-webgl="true" data-src="arena-geometry.js?v=f83a93531b"></script>
-    <script type="application/json" data-webgl="true" data-src="arena-seatview.js?v=a47709ae60"></script>
+    <script type="application/json" data-webgl="true" data-src="arena-seatview.js?v=7570341fda"></script>
     <script type="application/json" data-svg="true" data-src="ceca-plan-svg.js?v=c44dc5ffbb"></script>
-    <script type="application/json" data-fallback="map-svg.js?v=07b31664c6" data-src="map.js?v=fb24f57ecd"></script>
+    <script type="application/json" data-fallback="map-svg.js?v=f2730e082f" data-src="map.js?v=fb24f57ecd"></script>
     <script type="application/json" data-webgl="true" data-src="seatview3d.js?v=0919ec099f"></script>
     <script type="application/json" data-src="seatfinder.js?v=fe332e5646"></script>
     <script type="application/json" data-src="party-memory.js?v=3a34c34cdf"></script>
